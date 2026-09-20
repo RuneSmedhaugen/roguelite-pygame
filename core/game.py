@@ -75,6 +75,7 @@ class Game:
             main_stat=data.get("main_stat"),
             rarity=data.get("rarity", "common"),
 
+            name=data["name"],
             sprite_name=data.get("sprite"),
         )
 

@@ -26,6 +26,7 @@ class Character:
         main_stat=None,
         rarity="common",
         sprite_name=None,
+        name="Unknown",
     ):
         self.x = x
         self.y = y
@@ -57,6 +58,7 @@ class Character:
 
         self.sprite_name = sprite_name
         self.color = color
+        self.name = name
     # -------------------------
     # COMBAT SYSTEM
     # -------------------------

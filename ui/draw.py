@@ -1,9 +1,8 @@
 import pygame
 
 # -------------------------
-# SPRITE CACHE (FIXES LAG)
+# SPRITE CACHE (NO LAG ZONE)
 # -------------------------
-
 SPRITE_CACHE = {}
 
 def get_sprite(name):
@@ -17,15 +16,40 @@ def get_sprite(name):
 
 
 # -------------------------
-# UI DRAW FUNCTIONS
+# TEXT WRAP (FIXED GLOBAL)
 # -------------------------
+def draw_text_wrapped(screen, text, font, x, y, max_width, color=(180,180,180)):
+    words = text.split(" ")
+    lines = []
+    current = ""
 
+    for word in words:
+        test = current + word + " "
+        if font.size(test)[0] > max_width:
+            lines.append(current)
+            current = word + " "
+        else:
+            current = test
+
+    lines.append(current)
+
+    for i, line in enumerate(lines):
+        rendered = font.render(line, True, color)
+        screen.blit(rendered, (x, y + i * 20))
+
+
+# -------------------------
+# ROUND
+# -------------------------
 def draw_round(screen, round_number):
     font = pygame.font.SysFont(None, 40)
     text = font.render(f"Round {round_number}", True, (255, 255, 255))
     screen.blit(text, (380, 20))
 
 
+# -------------------------
+# UPGRADES
+# -------------------------
 def draw_upgrades(screen, upgrades, ready=True):
     font = pygame.font.SysFont(None, 40)
 
@@ -35,28 +59,55 @@ def draw_upgrades(screen, upgrades, ready=True):
         return
 
     for i, upg in enumerate(upgrades):
-        pygame.draw.rect(screen, (40, 40, 60), (40, 100 + i * 90, 400, 70), border_radius=8)
-
+        pygame.draw.rect(
+            screen,
+            (40, 40, 60),
+            (40, 100 + i * 90, 400, 70),
+            border_radius=8
+        )
         text = font.render(f"{i+1}: {upg[0]}", True, (255, 255, 255))
         screen.blit(text, (60, 120 + i * 90))
 
 
+# -------------------------
+# STATS PANEL (BATTLE)
+# -------------------------
 def draw_stats(screen, character, x, y):
-    font = pygame.font.SysFont(None, 28)
+    font = pygame.font.SysFont(None, 26)
+    title_font = pygame.font.SysFont(None, 32)
+
+    panel_width = 220
+    panel_height = 190
+
+    pygame.draw.rect(
+        screen,
+        (30, 30, 45),
+        (x - 10, y - 10, panel_width, panel_height),
+        border_radius=10
+    )
+
+    name = getattr(character, "name", "Unknown")
+    title = title_font.render(name, True, (255, 255, 255))
+    screen.blit(title, (x, y))
 
     stats = [
         f"HP: {int(character.hp)}/{int(character.max_hp)}",
         f"ATK: {character.atk_min}-{character.atk_max}",
+        f"SPD: {character.attack_speed:.2f}",
         f"CRIT: {int(character.crit * 100)}%",
         f"DODGE: {int(character.dodge * 100)}%",
         f"LS: {int(character.lifesteal * 100)}%",
+        f"ARMOR: {character.armor}",
     ]
 
     for i, line in enumerate(stats):
-        text = font.render(line, True, (255, 255, 255))
-        screen.blit(text, (x, y + i * 20))
+        text = font.render(line, True, (220, 220, 220))
+        screen.blit(text, (x, y + 35 + i * 18))
 
 
+# -------------------------
+# RESULT
+# -------------------------
 def draw_result(screen, result):
     font_big = pygame.font.SysFont(None, 100)
     font_small = pygame.font.SysFont(None, 40)
@@ -72,105 +123,105 @@ def draw_result(screen, result):
     screen.blit(sub, (300, 320))
 
 
+# -------------------------
+# CHARACTER SELECT (CLEAN + “CSS FEEL”)
+# -------------------------
 def draw_character_select(screen, characters, selected_index, mouse_pos, dry_run=False):
+
     font = pygame.font.SysFont(None, 28)
     big_font = pygame.font.SysFont(None, 40)
 
-    start_x = 50
-    spacing = 160
+    start_x = 60
+    spacing = 150
 
     card_rects = []
 
     for i, char in enumerate(characters):
-        x = start_x + i * spacing
-        y = 80   # 🔼 moved UP
 
-        rect = pygame.Rect(x, y, 80, 110)
+        x = start_x + i * spacing
+        y = 90
+
+        rect = pygame.Rect(x, y, 90, 120)
         card_rects.append(rect)
 
         hovered = rect.collidepoint(mouse_pos)
 
+        # COLORS (simple “UI feel”)
         if selected_index == i:
-            color = (200, 200, 80)
+            color = (220, 200, 80)
         elif hovered:
             color = (120, 120, 180)
         else:
-            color = (40, 40, 60)
+            color = (45, 45, 65)
 
         if not dry_run:
-            pygame.draw.rect(screen, color, rect, border_radius=8)
 
-            # ✅ FIXED SPRITE LOADING (no .png duplication)
+            # CARD BACKGROUND
+            pygame.draw.rect(screen, color, rect, border_radius=10)
+
+            # HOVER GLOW EFFECT
+            if hovered:
+                pygame.draw.rect(screen, (180, 180, 255), rect, 2, border_radius=10)
+
+            # SPRITE
             try:
-                img = get_sprite(char["sprite"])  # <-- IMPORTANT
-                screen.blit(img, (x + 10, y + 10))
+                img = get_sprite(char["sprite"])
+                screen.blit(img, (x + 15, y + 10))
             except Exception as e:
                 print("SPRITE ERROR:", char["sprite"], e)
 
+            # NAME
             name = font.render(char["name"], True, (255, 255, 255))
-            screen.blit(name, (x, y + 90))
+            screen.blit(name, (x, y + 80))
 
+            # INDEX
             key = font.render(f"{i+1}", True, (180, 180, 180))
-            screen.blit(key, (x + 30, y - 20))
+            screen.blit(key, (x + 35, y - 20))
 
     # -------------------------
-    # DETAILS PANEL (moved DOWN)
+    # DETAILS PANEL (RIGHT SIDE)
     # -------------------------
-
     if not dry_run and selected_index is not None:
+
         char = characters[selected_index]
 
-        base_y = 250  # 🔽 moved DOWN
+        panel_x = 320
+        panel_y = 250
+
+        pygame.draw.rect(
+            screen,
+            (25, 25, 35),
+            (panel_x - 10, panel_y - 10, 360, 300),
+            border_radius=12
+        )
 
         title = big_font.render(char["name"], True, (255, 255, 255))
-        screen.blit(title, (300, base_y))
+        screen.blit(title, (panel_x, panel_y))
 
         stats = [
             f"HP: {char['hp']}",
             f"ATK: {char['atk_min']}-{char['atk_max']}",
-            f"AS: {char['attack_speed']}",
+            f"SPD: {char['attack_speed']}",
             f"CRIT: {int(char['crit'] * 100)}%",
             f"DODGE: {int(char['dodge'] * 100)}%",
+            f"LS: {int(char['lifesteal'] * 100)}%",
+            f"ARMOR: {char['armor']}",
         ]
 
         for i, line in enumerate(stats):
             txt = font.render(line, True, (220, 220, 220))
-            screen.blit(txt, (300, base_y + 40 + i * 25))
+            screen.blit(txt, (panel_x, panel_y + 40 + i * 22))
 
-        desc = font.render(char["description"], True, (180, 180, 180))
-        screen.blit(desc, (300, base_y + 180))
+        draw_text_wrapped(
+            screen,
+            char["description"],
+            font,
+            panel_x,
+            panel_y + 200,
+            320
+        )
 
-        confirm = big_font.render("CLICK to start", True, (255, 255, 255))
-        screen.blit(confirm, (300, base_y + 230))
-
-    return card_rects
-
-    # -------------------------
-    # DETAILS PANEL
-    # -------------------------
-
-    if not dry_run and selected_index is not None:
-        char = characters[selected_index]
-
-        title = big_font.render(char["name"], True, (255, 255, 255))
-        screen.blit(title, (300, 100))
-
-        stats = [
-            f"HP: {char['hp']}",
-            f"ATK: {char['atk_min']}-{char['atk_max']}",
-            f"AS: {char['attack_speed']}",
-            f"CRIT: {int(char['crit'] * 100)}%",
-            f"DODGE: {int(char['dodge'] * 100)}%",
-        ]
-
-        for i, line in enumerate(stats):
-            txt = font.render(line, True, (220, 220, 220))
-            screen.blit(txt, (300, 140 + i * 25))
-
-        desc = font.render(char["description"], True, (180, 180, 180))
-        screen.blit(desc, (300, 300))
-
-        confirm = big_font.render("CLICK to start", True, (255, 255, 255))
-        screen.blit(confirm, (300, 350))
+        confirm = big_font.render("CLICK TO START", True, (255, 255, 255))
+        screen.blit(confirm, (panel_x, panel_y + 270))
 
     return card_rects
