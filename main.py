@@ -18,9 +18,10 @@ while running:
             running = False
 
     keys = pygame.key.get_pressed()
+    mouse_pos = pygame.mouse.get_pos()
+    mouse_click = pygame.mouse.get_pressed()[0]
 
-    # 🧠 Game handles ALL logic
-    game.update(keys)
+    game.update(keys, mouse_pos, mouse_click)
 
     # 🎨 Game handles ALL rendering
     game.draw(screen)

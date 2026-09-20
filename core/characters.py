@@ -1,7 +1,7 @@
 CHARACTERS = [
     {
         "id": "blubb_vann",
-        "name": "Blubb Vann",
+        "name": "Blubb",
         "sprite": "blubb_vann.png",
         "hp": 140,
         "hp_growth": 10,
@@ -24,7 +24,7 @@ CHARACTERS = [
 
     {
         "id": "buzzer_elektrisk",
-        "name": "Buzzer Elektrisk",
+        "name": "Buzzer",
         "sprite": "buzzer_elektrisk.png",
         "hp": 90,
         "hp_growth": 10,
@@ -105,4 +105,163 @@ CHARACTERS = [
         "main_stat": "crit",
         "description": "High risk, high reward crit machine."
     },
+
+    {
+        "name": "Cheesy",
+        "sprite": "cheesy.png",
+        "hp": 140,
+        "atk_min": 3,
+        "atk_max": 6,
+        "attack_speed": 1.1,
+        "crit": 0.05,
+        "dodge": 0.1,
+        "lifesteal": 0.08,
+        "description": "Tanky sustain. Hard to kill, low damage."
+    },
+    {
+        "name": "Narwall",
+        "sprite": "narwall.png",
+        "hp": 100,
+        "atk_min": 5,
+        "atk_max": 10,
+        "attack_speed": 0.8,
+        "crit": 0.2,
+        "dodge": 0.03,
+        "lifesteal": 0.0,
+        "description": "High crit burst. Feast or famine."
+    },
+    {
+        "name": "Stikky",
+        "sprite": "stikky.png",
+        "hp": 90,
+        "atk_min": 6,
+        "atk_max": 12,
+        "attack_speed": 0.9,
+        "crit": 0.15,
+        "dodge": 0.05,
+        "lifesteal": 0.0,
+        "description": "Glass cannon. Hits hard, dies fast."
+    },
+    {
+        "name": "Milk",
+        "sprite": "milk.png",
+        "hp": 110,
+        "atk_min": 4,
+        "atk_max": 7,
+        "attack_speed": 1.0,
+        "crit": 0.08,
+        "dodge": 0.08,
+        "lifesteal": 0.12,
+        "description": "Balanced with strong sustain."
+    },
+    {
+        "name": "Blubber",
+        "sprite": "blubber.png",
+        "hp": 180,
+        "atk_min": 2,
+        "atk_max": 4,
+        "attack_speed": 0.9,
+        "crit": 0.0,
+        "dodge": 0.02,
+        "lifesteal": 0.15,
+        "description": "Ultra tank with heavy lifesteal. Slow but hard to kill."
+    },
+    {
+        "name": "Kirky",
+        "sprite": "kirky.png",
+        "hp": 100,
+        "atk_min": 4,
+        "atk_max": 7,
+        "attack_speed": 1.4,
+        "crit": 0.05,
+        "dodge": 0.12,
+        "lifesteal": 0.05,
+        "description": "Speed hybrid. Fast attacks with decent survivability."
+    },
+    {
+        "name": "Kolera",
+        "sprite": "kolera.png",
+        "hp": 95,
+        "atk_min": 5,
+        "atk_max": 9,
+        "attack_speed": 1.0,
+        "crit": 0.25,
+        "dodge": 0.05,
+        "lifesteal": 0.0,
+        "description": "Crit specialist. High burst potential."
+    },
+    {
+        "name": "Krollefant",
+        "sprite": "krollefant.png",
+        "hp": 170,
+        "atk_min": 3,
+        "atk_max": 6,
+        "attack_speed": 0.8,
+        "crit": 0.05,
+        "dodge": 0.08,
+        "lifesteal": 0.1,
+        "description": "Tank hybrid. High HP with sustain and some dodge."
+    },
+    {
+        "name": "Onoff",
+        "sprite": "onoff.png",
+        "hp": 90,
+        "atk_min": 3,
+        "atk_max": 12,
+        "attack_speed": 1.0,
+        "crit": 0.1,
+        "dodge": 0.05,
+        "lifesteal": 0.0,
+        "description": "Unstable damage. Either weak or huge hits."
+    },
+    {
+        "name": "Pink",
+        "sprite": "pink.png",
+        "hp": 120,
+        "atk_min": 4,
+        "atk_max": 6,
+        "attack_speed": 1.2,
+        "crit": 0.1,
+        "dodge": 0.1,
+        "lifesteal": 0.05,
+        "description": "Balanced hybrid. No weaknesses, no extremes."
+    },
+    {
+        "name": "Pointface",
+        "sprite": "pointface.png",
+        "hp": 85,
+        "atk_min": 6,
+        "atk_max": 10,
+        "attack_speed": 1.3,
+        "crit": 0.15,
+        "dodge": 0.02,
+        "lifesteal": 0.0,
+        "description": "Aggressive striker. High pressure, low defense."
+    },
+    {
+        "name": "Susage",
+        "sprite": "susage.png",
+        "hp": 130,
+        "atk_min": 3,
+        "atk_max": 5,
+        "attack_speed": 1.5,
+        "crit": 0.05,
+        "dodge": 0.2,
+        "lifesteal": 0.03,
+        "description": "Dodge speedster. Hard to hit, chips enemies down."
+    },
+    {
+        "name": "Vilmaa",
+        "sprite": "vilmaa.png",
+        "hp": 110,
+        "atk_min": 4,
+        "atk_max": 8,
+        "attack_speed": 1.1,
+        "crit": 0.12,
+        "dodge": 0.08,
+        "lifesteal": 0.08,
+        "description": "Jack of all trades with slight sustain bias."
+    }
+
+
 ]

@@ -44,8 +44,9 @@ class Battle:
         y = char.y - offset
 
 
-        if char.sprite:
-            screen.blit(char.sprite, (char.x, y))
+        if char.sprite_name:
+            img = pygame.image.load(f"assets/sprites/{char.sprite_name}").convert_alpha()
+            screen.blit(img, (char.x, y))
         else:
             pygame.draw.rect(screen, char.color, (char.x, char.y, 80, 80))
 

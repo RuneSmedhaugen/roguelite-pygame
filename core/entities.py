@@ -4,12 +4,29 @@ import pygame
 import os
 
 class Character:
-    # -------------------------
-    # CORE SETUP
-    # -------------------------
-    def __init__(self, x, y, hp, atk_min, atk_max, color,
-                 crit=0.1, dodge=0.05, lifesteal=0.0, sprite_name=None):
-
+    def __init__(
+        self,
+        x,
+        y,
+        hp,
+        atk_min,
+        atk_max,
+        color,
+        crit=0.1,
+        dodge=0.05,
+        lifesteal=0.0,
+        attack_speed=1.0,
+        armor=0,
+        magic_resist=0,
+        magic_damage=0.0,
+        hp_growth=0,
+        atk_growth=0,
+        size=1.0,
+        on_hit=None,
+        main_stat=None,
+        rarity="common",
+        sprite_name=None,
+    ):
         self.x = x
         self.y = y
 
@@ -23,13 +40,23 @@ class Character:
         self.dodge = dodge
         self.lifesteal = lifesteal
 
-        self.color = color
-        self.sprite = None
-        if sprite_name:
-            path = os.path.join("assets", "sprites", sprite_name)
-            self.sprite = pygame.image.load(path).convert_alpha()
-            self.sprite = pygame.transform.scale(self.sprite, (80, 80))
+        self.attack_speed = attack_speed
 
+        self.armor = armor
+        self.magic_resist = magic_resist
+        self.magic_damage = magic_damage
+
+        self.hp_growth = hp_growth
+        self.atk_growth = atk_growth
+
+        self.size = size
+        self.on_hit = on_hit or []
+
+        self.main_stat = main_stat
+        self.rarity = rarity
+
+        self.sprite_name = sprite_name
+        self.color = color
     # -------------------------
     # COMBAT SYSTEM
     # -------------------------
