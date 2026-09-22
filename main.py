@@ -29,7 +29,7 @@ while running:
     game.update(keys, mouse_pos, mouse_click)
 
     # 🎨 Game handles ALL rendering
-    game.draw(screen)
+    game.draw(screen, mouse_pos)
 
     pygame.display.flip()
 

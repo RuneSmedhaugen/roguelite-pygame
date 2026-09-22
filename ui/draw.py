@@ -96,7 +96,7 @@ def draw_upgrades(screen, upgrades, ready=True):
             (40, 100 + i * 90, 400, 70),
             border_radius=8
         )
-        text = font.render(f"{i+1}: {upg[0]}", True, (255, 255, 255))
+        text = font.render(f"{i+1}: {upg['name']}", True, (255, 255, 255))
         screen.blit(text, (60, 120 + i * 90))
 
 
@@ -196,7 +196,10 @@ def draw_character_select(screen, characters, selected_index, mouse_pos, dry_run
 
             # SPRITE
             try:
-                img = get_sprite(char["sprite"])
+                sprite_name = char.get("sprite", None)
+                if sprite_name:
+                    img = get_sprite(sprite_name)
+                    screen.blit(img, (x + 15, y + 10))
                 screen.blit(img, (x + 15, y + 10))
             except Exception as e:
                 print("SPRITE ERROR:", char["sprite"], e)

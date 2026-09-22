@@ -1,4 +1,5 @@
 CHARACTERS = [
+
     {
         "id": "blubb_vann",
         "name": "Blubb",
@@ -16,10 +17,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "hp",
+        "main_stats": {"hp": 0.7, "armor": 0.3},
+        "passive": "scaling_shield",
         "rarity": "common",
-        "description": "Tanky lil water blob with sustain."
+        "description": "A calm koi spirit that slowly becomes impossible to remove."
     },
 
     {
@@ -39,10 +40,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "atk",
+        "main_stats": {"attack_speed": 0.6, "crit": 0.4},
+        "passive": "double_strike",
         "rarity": "common",
-        "description": "Fast attacker with crit bursts."
+        "description": "Dual-headed lightning striker that sometimes hits twice."
     },
 
     {
@@ -62,10 +63,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "dodge",
+        "main_stats": {"dodge": 0.6, "attack_speed": 0.4},
+        "passive": "evasive_focus",
         "rarity": "common",
-        "description": "Balanced but slippery."
+        "description": "Survives by slipping through everything and striking back hard."
     },
 
     {
@@ -85,10 +86,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.1,
-        "on_hit": [],
-        "main_stat": "hp",
+        "main_stats": {"hp": 0.75, "armor": 0.25},
+        "passive": "ramp_armor",
         "rarity": "common",
-        "description": "A chunky tank that refuses to die."
+        "description": "A walking fortress that gets harder to kill the longer it lives."
     },
 
     {
@@ -108,10 +109,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "crit",
+        "main_stats": {"crit": 0.7, "atk": 0.3},
+        "passive": "low_hp_crit_scaling",
         "rarity": "common",
-        "description": "High risk, high reward crit machine."
+        "description": "A brittle crit monster that becomes dangerous when cornered."
     },
 
     {
@@ -131,10 +132,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "hp",
+        "main_stats": {"hp": 0.6, "lifesteal": 0.4},
+        "passive": "regen_on_damage",
         "rarity": "common",
-        "description": "Tanky sustain. Hard to kill, low damage."
+        "description": "Keeps patching itself up no matter how rough it gets."
     },
 
     {
@@ -154,10 +155,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "crit",
+        "main_stats": {"crit": 0.8, "atk": 0.2},
+        "passive": "nth_hit_crit",
         "rarity": "common",
-        "description": "High crit burst. Feast or famine."
+        "description": "Every few hits, reality checks in late."
     },
 
     {
@@ -177,10 +178,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "atk",
+        "main_stats": {"atk": 0.7, "crit": 0.3},
+        "passive": "bleed_on_hit",
         "rarity": "common",
-        "description": "Glass cannon. Hits hard, dies fast."
+        "description": "Leaves enemies bleeding while pretending it didn’t try that hard."
     },
 
     {
@@ -200,10 +201,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "lifesteal",
+        "main_stats": {"lifesteal": 0.7, "hp": 0.3},
+        "passive": "lifesteal_scaling_low_hp",
         "rarity": "common",
-        "description": "Balanced with strong sustain."
+        "description": "Drains life better when things go wrong."
     },
 
     {
@@ -223,10 +224,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.2,
-        "on_hit": [],
-        "main_stat": "hp",
+        "main_stats": {"hp": 0.6, "lifesteal": 0.4},
+        "passive": "damage_reduction_fight_scaling",
         "rarity": "common",
-        "description": "Ultra tank with heavy lifesteal."
+        "description": "The longer you fight it, the worse it gets for you."
     },
 
     {
@@ -246,10 +247,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "attack_speed",
+        "main_stats": {"attack_speed": 0.7, "dodge": 0.3},
+        "passive": "speed_on_dodge",
         "rarity": "common",
-        "description": "Speed hybrid."
+        "description": "Dodging fuels frantic attack bursts."
     },
 
     {
@@ -269,10 +270,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "crit",
+        "main_stats": {"crit": 1.0},
+        "passive": "pure_crit_spike",
         "rarity": "common",
-        "description": "Crit specialist."
+        "description": "No plan. Just crits."
     },
 
     {
@@ -292,10 +293,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.1,
-        "on_hit": [],
-        "main_stat": "hp",
+        "main_stats": {"hp": 0.5, "armor": 0.5},
+        "passive": "armor_to_damage",
         "rarity": "common",
-        "description": "Tank hybrid."
+        "description": "Defense that eventually hits back harder."
     },
 
     {
@@ -315,10 +316,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "atk",
+        "main_stats": {"atk": 1.0},
+        "passive": "toggle_mode",
         "rarity": "common",
-        "description": "Unstable damage."
+        "description": "Switches between tanky and explosive like a broken light switch."
     },
 
     {
@@ -338,10 +339,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "balanced",
+        "main_stats": {"hp": 0.5, "dodge": 0.5},
+        "passive": "adaptive_boost",
         "rarity": "common",
-        "description": "Balanced hybrid."
+        "description": "Changes style depending on how the fight is going."
     },
 
     {
@@ -361,10 +362,10 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "atk",
+        "main_stats": {"atk": 0.8, "crit": 0.2},
+        "passive": "bleed_on_crit",
         "rarity": "common",
-        "description": "Aggressive striker."
+        "description": "Cuts that keep hurting after impact."
     },
 
     {
@@ -377,17 +378,17 @@ CHARACTERS = [
         "atk_max": 5,
         "atk_growth": 1,
         "attack_speed": 1.5,
-        "crit": 0.05,
+        "crit": 0.2,
         "dodge": 0.2,
         "lifesteal": 0.03,
         "armor": 3,
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "dodge",
+        "main_stats": {"dodge": 0.7, "attack_speed": 0.3},
+        "passive": "dodge_speed_stacking",
         "rarity": "common",
-        "description": "Dodge speedster."
+        "description": "Moves so much it’s basically a blur."
     },
 
     {
@@ -407,9 +408,9 @@ CHARACTERS = [
         "magic_resist": 0,
         "magic_damage": 0.0,
         "size": 1.0,
-        "on_hit": [],
-        "main_stat": "balanced",
+        "main_stats": {"atk": 0.4, "crit": 0.3, "lifesteal": 0.3},
+        "passive": "random_surge",
         "rarity": "common",
-        "description": "Jack of all trades."
+        "description": "Unstable experiment that occasionally spikes in power."
     }
 ]

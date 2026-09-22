@@ -1,113 +1,61 @@
-import random
+from core.passives import create_passive
 
-import pygame
-import os
 
 class Character:
-    def __init__(
-        self,
-        x,
-        y,
-        hp,
-        atk_min,
-        atk_max,
-        color,
-        crit=0.1,
-        dodge=0.05,
-        lifesteal=0.0,
-        attack_speed=1.0,
-        armor=0,
-        magic_resist=0,
-        magic_damage=0.0,
-        hp_growth=0,
-        atk_growth=0,
-        size=1.0,
-        on_hit=None,
-        main_stat=None,
-        rarity="common",
-        sprite_name=None,
-        name="Unknown",
-    ):
-        self.x = x
-        self.y = y
+    def __init__(self, data):
+        self.x = data.x
+        self.y = data.y
 
-        self.hp = hp
-        self.max_hp = hp
+        self.hp = data.hp
+        self.max_hp = data.hp
 
-        self.atk_min = atk_min
-        self.atk_max = atk_max
+        self.atk_min = data.atk_min
+        self.atk_max = data.atk_max
 
-        self.crit = crit
-        self.dodge = dodge
-        self.lifesteal = lifesteal
+        self.crit = data.crit
+        self.dodge = data.dodge
+        self.lifesteal = data.lifesteal
+        self.attack_speed = data.attack_speed
 
-        self.attack_speed = attack_speed
+        self.armor = data.armor
+        self.magic_resist = data.magic_resist
+        self.magic_damage = data.magic_damage
 
-        self.armor = armor
-        self.magic_resist = magic_resist
-        self.magic_damage = magic_damage
+        self.hp_growth = data.hp_growth
+        self.atk_growth = data.atk_growth
 
-        self.hp_growth = hp_growth
-        self.atk_growth = atk_growth
+        self.size = data.size
+        self.main_stat = data.main_stat
+        self.rarity = data.rarity
 
-        self.size = size
-        self.on_hit = on_hit or []
+        self.name = data.name
+        self.sprite_name = data.sprite_name
 
-        self.main_stat = main_stat
-        self.rarity = rarity
+        self.passives = []
 
-        self.sprite_name = sprite_name
-        self.color = color
-        self.name = name
-    # -------------------------
-    # COMBAT SYSTEM
-    # -------------------------
-    def attack(self, other):
-        damage = random.randint(self.atk_min, self.atk_max)
+        passive_ids = data.passives or []
 
-        # crit
-        if random.random() < self.crit:
-            damage *= 2
+        for pid in passive_ids:
+            self.passives.append(create_passive(pid))
 
-        # dodge
-        if random.random() < other.dodge:
-            damage = 0
-
-        other.hp -= damage
-
-        # lifesteal
-        heal = damage * self.lifesteal
-        self.hp = min(self.max_hp, self.hp + heal)
-
-
+    
     def is_alive(self):
         return self.hp > 0
 
-    # -------------------------
-    # PROGRESSION SYSTEM
-    # -------------------------
     def apply_upgrade(self, upgrade):
-        name, stat, value = upgrade
+        # upgrade assumed dict: {"type": "hp", "value": 10}
+        t = upgrade.get("type")
 
-        if stat == "hp":
-            self.max_hp += value
-            self.hp += value
+        if t == "hp":
+            self.max_hp += upgrade["value"]
+            self.hp += upgrade["value"]
 
-        elif stat == "atk":
-            if isinstance(value, tuple):
-                import random
-                bonus = random.randint(value[0], value[1])
-            else:
-                bonus = value
+        elif t == "atk":
+            self.atk_min += upgrade["value"]
+            self.atk_max += upgrade["value"]
 
-            self.atk_min += bonus
-            self.atk_max += bonus
+        elif t == "armor":
+            self.armor += upgrade["value"]
 
-        elif stat == "crit":
-            self.crit += value
-
-        elif stat == "dodge":
-            self.dodge += value
-
-        elif stat == "lifesteal":
-            self.lifesteal += value
+        elif t == "crit":
+            self.crit += upgrade["value"]
