@@ -10,9 +10,40 @@ def get_sprite(name):
         return SPRITE_CACHE[name]
 
     img = pygame.image.load(f"assets/sprites/{name}").convert_alpha()
-    img = pygame.transform.scale(img, (60, 60))
+    img = pygame.transform.scale(img, (120, 120))
     SPRITE_CACHE[name] = img
     return img
+
+def draw_menu(self, screen):
+    screen.fill((20, 20, 30))
+
+    font_big = pygame.font.SysFont(None, 80)
+    font = pygame.font.SysFont(None, 40)
+
+    title = font_big.render("TROLL GAME", True, (255, 255, 255))
+    screen.blit(title, (250, 100))
+
+    # PLAY BUTTON
+    pygame.draw.rect(screen, (60, 120, 200), (350, 220, 200, 60), border_radius=10)
+    play = font.render("PLAY", True, (255, 255, 255))
+    screen.blit(play, (410, 235))
+
+    # SETTINGS BUTTON
+    pygame.draw.rect(screen, (80, 80, 80), (350, 320, 200, 60), border_radius=10)
+    settings = font.render("SETTINGS", True, (255, 255, 255))
+    screen.blit(settings, (380, 335))
+
+def draw_settings(self, screen):
+    screen.fill((15, 15, 25))
+
+    font_big = pygame.font.SysFont(None, 60)
+    font = pygame.font.SysFont(None, 30)
+
+    title = font_big.render("SETTINGS", True, (255, 255, 255))
+    screen.blit(title, (300, 80))
+
+    info = font.render("Click anywhere to go back", True, (180, 180, 180))
+    screen.blit(info, (300, 200))
 
 
 # -------------------------

@@ -3,8 +3,9 @@ from core.game import Game
 
 pygame.init()
 
-WIDTH, HEIGHT = 900, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+BASE_WIDTH = 900
+BASE_HEIGHT = 600
+screen = pygame.display.set_mode((BASE_WIDTH, BASE_HEIGHT), pygame.RESIZABLE)
 clock = pygame.time.Clock()
 
 game = Game()
@@ -16,6 +17,10 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_F11:
+                pygame.display.toggle_fullscreen()
 
     keys = pygame.key.get_pressed()
     mouse_pos = pygame.mouse.get_pos()
