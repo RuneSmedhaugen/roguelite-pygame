@@ -1,3 +1,24 @@
+# Virtual environment
 .venv/
+
+# Python cache
 __pycache__/
-*.pyc
+*.py[cod]
+
+# Environment variables
+.env
+
+# IDE stuff
+.vscode/
+.idea/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Build / dist (future-proofing)
+build/
+dist/
+
+# Logs
+*.log
