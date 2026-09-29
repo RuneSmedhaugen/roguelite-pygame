@@ -82,22 +82,31 @@ def draw_round(screen, round_number):
 # UPGRADES
 # -------------------------
 def draw_upgrades(screen, upgrades, ready=True):
+
     font = pygame.font.SysFont(None, 40)
+    rects = []
 
     if not ready:
         text = font.render("Preparing upgrades...", True, (150, 150, 150))
         screen.blit(text, (320, 250))
-        return
+        return rects
 
     for i, upg in enumerate(upgrades):
+
+        rect = pygame.Rect(40, 100 + i * 90, 400, 70)
+        rects.append(rect)
+
         pygame.draw.rect(
             screen,
             (40, 40, 60),
-            (40, 100 + i * 90, 400, 70),
+            rect,
             border_radius=8
         )
+
         text = font.render(f"{i+1}: {upg['name']}", True, (255, 255, 255))
         screen.blit(text, (60, 120 + i * 90))
+
+    return rects
 
 
 # -------------------------

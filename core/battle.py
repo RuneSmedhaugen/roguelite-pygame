@@ -159,11 +159,9 @@ class Battle:
         now = pygame.time.get_ticks()
 
         # resolve speed safely
-        p_stats = self.combat.resolve_attack_stats(self.player)
-        e_stats = self.combat.resolve_attack_stats(self.enemy)
 
-        player_speed = max(0.1, p_stats["speed"])
-        enemy_speed = max(0.1, e_stats["speed"])
+        player_speed = max(0.1, self.player.attack_speed)
+        enemy_speed = max(0.1, self.enemy.attack_speed)
 
         player_delay = 1000 / player_speed
         enemy_delay = 1000 / enemy_speed

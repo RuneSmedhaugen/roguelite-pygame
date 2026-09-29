@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 from typing import List, Optional
+from core.upgrades import apply_upgrade as apply_upgrade_func
 
+
+def apply_upgrade(self, upgrade):
+    apply_upgrade_func(self, upgrade)
 
 @dataclass
 class CharacterData:

@@ -13,32 +13,46 @@ UPGRADES = [
 ]
 
 
-def apply_upgrade(character, upgrade):
-    """
-    Central upgrade handler (important missing piece).
-    Keeps logic consistent everywhere.
-    """
-
-    stat = upgrade["stat"]
+def apply_upgrade(self, upgrade):
+    t = upgrade.get("stat")
     value = upgrade["value"]
 
-    # HP upgrade
-    if stat == "hp":
-        character.max_hp += value
-        character.hp += value
+    # HP
+    if t == "hp":
+        self.max_hp += value
+        self.hp += value
         return
 
-    # DAMAGE upgrade (min/max split)
-    if stat == "atk":
-        min_inc, max_inc = value
-        character.atk_min += min_inc
-        character.atk_max += max_inc
+    # DAMAGE (min/max split)
+    if t == "atk":
+        self.atk_min += value[0]
+        self.atk_max += value[1]
         return
 
-    # flat stat upgrades
-    if hasattr(character, stat):
-        current = getattr(character, stat)
-        setattr(character, stat, current + value)
+    # CRIT
+    if t == "crit":
+        self.crit += value
+        return
+
+    # DODGE
+    if t == "dodge":
+        self.dodge += value
+        return
+
+    # LIFESTEAL
+    if t == "lifesteal":
+        self.lifesteal += value
+        return
+
+    # ATTACK SPEED
+    if t == "attack_speed":
+        self.attack_speed += value
+        return
+
+    # ARMOR
+    if t == "armor":
+        self.armor += value
+        return
 
 
 def get_random_upgrades(n=3):

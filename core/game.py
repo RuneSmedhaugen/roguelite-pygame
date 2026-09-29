@@ -30,6 +30,7 @@ class Game:
         self.battle = None
         self.result = None
         self.click_lock = False
+        self.selected_upgrade = None
 
         # upgrades
         self.upgrades = []
@@ -56,7 +57,9 @@ class Game:
     # -------------------------
     def start_upgrade(self):
         self.upgrades = get_random_upgrades(3)
+        self.upgrade_rects = []
 
+    
     # -------------------------
     # UPDATE LOOP (LOGIC ONLY)
     # -------------------------
@@ -107,11 +110,61 @@ class Game:
 
         # UPGRADE
         if self.state == "upgrade":
+
             if mouse_click and not self.click_lock:
                 self.click_lock = True
-                chosen = 0
-                self.player.apply_upgrade(self.upgrades[chosen])
-                self.state = "next"
+
+                for i, r in enumerate(self.upgrade_rects):
+                    if r.collidepoint(mouse_pos):
+
+                        upg = self.upgrades[i]
+
+                        # -------- BEFORE SNAPSHOT --------
+                        before = {
+                            "hp": self.player.hp,
+                            "max_hp": self.player.max_hp,
+                            "atk_min": self.player.atk_min,
+                            "atk_max": self.player.atk_max,
+                            "crit": self.player.crit,
+                            "dodge": self.player.dodge,
+                            "lifesteal": self.player.lifesteal,
+                            "attack_speed": self.player.attack_speed,
+                            "armor": self.player.armor,
+                        }
+
+                        print("\n===== UPGRADE START =====")
+                        print("SELECTED:", upg)
+                        print("BEFORE:", before)
+
+                        # APPLY
+                        self.player.apply_upgrade(upg)
+
+                        # -------- AFTER SNAPSHOT --------
+                        after = {
+                            "hp": self.player.hp,
+                            "max_hp": self.player.max_hp,
+                            "atk_min": self.player.atk_min,
+                            "atk_max": self.player.atk_max,
+                            "crit": self.player.crit,
+                            "dodge": self.player.dodge,
+                            "lifesteal": self.player.lifesteal,
+                            "attack_speed": self.player.attack_speed,
+                            "armor": self.player.armor,
+                        }
+
+                        print("AFTER: ", after)
+
+                        # -------- DIFF HIGHLIGHT --------
+                        print("CHANGES:")
+                        for k in before:
+                            if before[k] != after[k]:
+                                print(f"  {k}: {before[k]} -> {after[k]}")
+
+                        print("===== UPGRADE END =====\n")
+
+                        self.state = "next"
+                        break
+
             return
 
         # NEXT ROUND
@@ -155,6 +208,6 @@ class Game:
 
         elif self.state == "upgrade":
             screen.fill((15, 15, 20))
-            draw_upgrades(screen, self.upgrades)
+            self.upgrade_rects = draw_upgrades(screen, self.upgrades)
 
         pygame.display.flip()

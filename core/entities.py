@@ -43,12 +43,12 @@ class Character:
         return self.hp > 0
 
     def apply_upgrade(self, upgrade):
-        # upgrade assumed dict: {"type": "hp", "value": 10}
-        t = upgrade.get("type")
+        # upgrade assumed dict: {"stat": "hp", "value": 10}
+        t = upgrade.get("stat")
 
-        if t == "hp":
-            self.max_hp += upgrade["value"]
-            self.hp += upgrade["value"]
+        if t == "atk":
+            self.atk_min += upgrade["value"][0]
+            self.atk_max += upgrade["value"][1]
 
         elif t == "atk":
             self.atk_min += upgrade["value"]
