@@ -23,13 +23,16 @@ class UIRenderer:
             draw_character_select(
                 screen,
                 game.character_choices,
-                game.select_ui.selected_index if hasattr(game.select_ui, "selected_index") else None,
+                game.selected_index,
                 mouse_pos
             )
 
         elif state == "battle":
             screen.fill((10, 10, 20))
             draw_round(screen, game.round)
+
+            if game.battle:
+                game.battle.draw(screen)
 
             # player + enemy stats
             draw_stats(screen, game.player, 80, 400)

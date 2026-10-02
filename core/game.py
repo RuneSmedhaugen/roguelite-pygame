@@ -19,10 +19,14 @@ from ui.draw import (
 
 class Game:
     def __init__(self):
+        from ui.ui_renderer import UIRenderer
+        self.ui = UIRenderer()
+
         self.round = 1
         self.state = "menu"
 
         # data
+        self.lives = 5
         self.character_choices = []
         self.selected_index = None
         self.player = None
@@ -59,6 +63,15 @@ class Game:
         self.upgrades = get_random_upgrades(3)
         self.upgrade_rects = []
 
+    def reset_run(self):
+        self.round = 1
+        self.lives = 5
+        self.player = None
+        self.enemy = None
+        self.battle = None
+        self.result = None
+        self.state = "menu"
+
     
     # -------------------------
     # UPDATE LOOP (LOGIC ONLY)
@@ -69,8 +82,15 @@ class Game:
 
         # MENU
         if self.state == "menu":
-            if mouse_click:
-                self.state = "select"
+            if mouse_click and not self.click_lock:
+                self.click_lock = True
+
+                play_button = pygame.Rect(350, 220, 200, 60)
+
+                if play_button.collidepoint(mouse_pos):
+                    print("CLICK PLAY")
+                    self.state = "select"
+
             return
 
         # SELECT
@@ -97,11 +117,20 @@ class Game:
                 self.battle.update()
             else:
                 self.result = self.battle.winner
+
+                if self.result == "enemy":
+                    self.lives -= 1
+                    print (f"LIFE LOST! Lives remaining: {self.lives}")
+
                 self.state = "result"
             return
 
         # RESULT
         if self.state == "result":
+            if self.lives <= 0:
+                self.state = "game_over"
+                return
+
             if mouse_click and not self.click_lock:
                 self.click_lock = True
                 self.state = "upgrade"
@@ -176,38 +205,14 @@ class Game:
             self.state = "battle"
             return
 
+        if self.state == "game_over":
+            if mouse_click and not self.click_lock:
+                self.click_lock = True
+                self.reset_run()
+            return
+
     # -------------------------
     # DRAW LOOP (RENDER ONLY)
     # -------------------------
     def draw(self, screen, mouse_pos):
-
-        if self.state == "menu":
-            draw_menu(self, screen)
-
-        elif self.state == "select":
-            draw_character_select(
-                screen,
-                self.character_choices,
-                self.selected_index,
-                mouse_pos
-            )
-
-        elif self.state == "battle":
-            screen.fill((20, 20, 30))
-            draw_round(screen, self.round)
-
-            if self.player:
-                draw_stats(screen, self.player, 40, 80)
-
-            if self.enemy:
-                draw_stats(screen, self.enemy, 600, 80)
-
-        elif self.state == "result":
-            screen.fill((10, 10, 15))
-            draw_result(screen, self.result)
-
-        elif self.state == "upgrade":
-            screen.fill((15, 15, 20))
-            self.upgrade_rects = draw_upgrades(screen, self.upgrades)
-
-        pygame.display.flip()
+        self.ui.draw(self, screen, mouse_pos)

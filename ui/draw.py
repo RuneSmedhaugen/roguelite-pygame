@@ -209,7 +209,6 @@ def draw_character_select(screen, characters, selected_index, mouse_pos, dry_run
                 if sprite_name:
                     img = get_sprite(sprite_name)
                     screen.blit(img, (x + 15, y + 10))
-                screen.blit(img, (x + 15, y + 10))
             except Exception as e:
                 print("SPRITE ERROR:", char["sprite"], e)
 

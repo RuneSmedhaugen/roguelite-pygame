@@ -43,19 +43,23 @@ class Character:
         return self.hp > 0
 
     def apply_upgrade(self, upgrade):
-        # upgrade assumed dict: {"stat": "hp", "value": 10}
-        t = upgrade.get("stat")
+        stat = upgrade.get("stat")
+        value = upgrade.get("value")
 
-        if t == "atk":
-            self.atk_min += upgrade["value"][0]
-            self.atk_max += upgrade["value"][1]
+        # -------- HP --------
+        if stat == "hp":
+            self.max_hp += value
+            self.hp += value
+            return
 
-        elif t == "atk":
-            self.atk_min += upgrade["value"]
-            self.atk_max += upgrade["value"]
+        # -------- DAMAGE --------
+        if stat == "atk":
+            min_inc, max_inc = value
+            self.atk_min += min_inc
+            self.atk_max += max_inc
+            return
 
-        elif t == "armor":
-            self.armor += upgrade["value"]
-
-        elif t == "crit":
-            self.crit += upgrade["value"]
+        # -------- GENERIC STATS --------
+        if hasattr(self, stat):
+            current = getattr(self, stat)
+            setattr(self, stat, current + value)
