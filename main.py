@@ -3,9 +3,10 @@ from core.game import Game
 
 pygame.init()
 
-BASE_WIDTH = 900
-BASE_HEIGHT = 600
-screen = pygame.display.set_mode((BASE_WIDTH, BASE_HEIGHT), pygame.RESIZABLE)
+BASE_WIDTH = 0
+BASE_HEIGHT = 0
+FULLSCREEN = True
+screen = pygame.display.set_mode((BASE_WIDTH, BASE_HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 
 game = Game()
