@@ -7,20 +7,22 @@ from core.upgrades import get_random_upgrades
 from core.character_factory import build_character
 from core.character_factory import get_random_characters
 
-from ui.draw import (
-    draw_menu,
-    draw_character_select,
-    draw_upgrades,
-    draw_round,
-    draw_stats,
-    draw_result,
-)
+from ui.draw import draw_character_select
+from ui.layout import menu_buttons, select_back_button, selection_confirm_buttons
 
 
 class Game:
     def __init__(self):
         from ui.ui_renderer import UIRenderer
+        from ui.settings import SettingsScreen
         self.ui = UIRenderer()
+        self.settings_screen = SettingsScreen()
+        self.display_mode = "fullscreen"
+        self.display_index = 0
+        self.display_size = pygame.display.get_surface().get_size()
+        self.settings_screen.sync(self.display_mode, self.display_size, self.display_index)
+        self.display_request = None
+        self.exit_requested = False
 
         self.round = 1
         self.state = "menu"
@@ -29,6 +31,8 @@ class Game:
         self.lives = 5
         self.character_choices = []
         self.selected_index = None
+        self.hovered_index = None
+        self.pending_character_index = None
         self.player = None
         self.enemy = None
         self.battle = None
@@ -70,13 +74,15 @@ class Game:
         self.enemy = None
         self.battle = None
         self.result = None
+        self.pending_character_index = None
+        self.hovered_index = None
         self.state = "menu"
 
     
     # -------------------------
     # UPDATE LOOP (LOGIC ONLY)
     # -------------------------
-    def update(self, keys, mouse_pos, mouse_click):
+    def update(self, keys, mouse_pos, mouse_click, screen=None):
         if not mouse_click:
             self.click_lock = False
 
@@ -85,29 +91,66 @@ class Game:
             if mouse_click and not self.click_lock:
                 self.click_lock = True
 
-                play_button = pygame.Rect(350, 220, 200, 60)
+                play_button, settings_button, exit_button = menu_buttons(screen or pygame.display.get_surface())
 
                 if play_button.collidepoint(mouse_pos):
                     print("CLICK PLAY")
                     self.state = "select"
+                elif settings_button.collidepoint(mouse_pos):
+                    self.state = "settings"
+                elif exit_button.collidepoint(mouse_pos):
+                    self.exit_requested = True
 
+            return
+
+        if self.state == "settings":
+            if mouse_click and not self.click_lock and screen is not None:
+                self.click_lock = True
+                action, request = self.settings_screen.handle_click(screen, mouse_pos)
+                if action == "back":
+                    self.state = "menu"
+                elif action == "apply":
+                    self.display_request = request
             return
 
         # SELECT
         if self.state == "select":
-            # simple click-to-select version
+            layout_screen = screen or pygame.display.get_surface()
+            if self.pending_character_index is not None:
+                if mouse_click and not self.click_lock:
+                    self.click_lock = True
+                    _, start_button, back_button = selection_confirm_buttons(layout_screen)
+                    if start_button.collidepoint(mouse_pos):
+                        selected = self.pending_character_index
+                        self.pending_character_index = None
+                        self.start_game_with_character(selected)
+                    elif back_button.collidepoint(mouse_pos):
+                        self.pending_character_index = None
+                return
+
             rects = draw_character_select(
-                None,
+                layout_screen,
                 self.character_choices,
-                self.selected_index,
+                None,
                 mouse_pos,
                 dry_run=True
             )
+            self.hovered_index = next(
+                (index for index, rect in enumerate(rects) if rect.collidepoint(mouse_pos)),
+                None,
+            )
 
-            if mouse_click and rects:
+            if mouse_click and not self.click_lock and select_back_button(layout_screen).collidepoint(mouse_pos):
+                self.click_lock = True
+                self.hovered_index = None
+                self.state = "menu"
+                return
+
+            if mouse_click and not self.click_lock and rects:
                 for i, r in enumerate(rects):
                     if r.collidepoint(mouse_pos):
-                        self.start_game_with_character(i)
+                        self.click_lock = True
+                        self.pending_character_index = i
                         return
             return
 
@@ -122,19 +165,11 @@ class Game:
                     self.lives -= 1
                     print (f"LIFE LOST! Lives remaining: {self.lives}")
 
-                self.state = "result"
-            return
-
-        # RESULT
-        if self.state == "result":
-            if self.lives <= 0:
-                self.state = "game_over"
-                return
-
-            if mouse_click and not self.click_lock:
-                self.click_lock = True
-                self.state = "upgrade"
-                self.start_upgrade()
+                if self.lives <= 0:
+                    self.state = "game_over"
+                else:
+                    self.start_upgrade()
+                    self.state = "upgrade"
             return
 
         # UPGRADE
