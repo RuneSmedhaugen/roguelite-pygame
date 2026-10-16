@@ -1,13 +1,18 @@
 import pygame
 
 from ui.layout import scaled
+from ui.menu_antics import MenuAntics
 from ui.draw import (
     draw_menu,
     draw_round,
     draw_stats,
     draw_game_over,
     draw_character_select,
-    draw_upgrades
+    draw_upgrades,
+    draw_pause_button,
+    draw_pause_menu,
+    draw_life_runes,
+    draw_battle_outcome_labels,
 )
 
 
@@ -16,6 +21,9 @@ _BATTLE_BACKGROUND_SCALED = {}
 
 
 class UIRenderer:
+    def __init__(self):
+        self.menu_antics = MenuAntics()
+
     def _draw_battle_background(self, screen):
         global _BATTLE_BACKGROUND
 
@@ -35,7 +43,7 @@ class UIRenderer:
         state = game.state
 
         if state == "menu":
-            draw_menu(game, screen)
+            draw_menu(game, screen, self.menu_antics)
 
         elif state == "settings":
             game.settings_screen.draw(screen, mouse_pos)
@@ -54,12 +62,22 @@ class UIRenderer:
             draw_round(screen, game.round)
 
             if game.battle:
-                game.battle.draw(screen)
+                frozen_time = game.pause_started_at if game.pause_open else None
+                game.battle.draw(screen, animation_time=frozen_time)
 
             # player + enemy stats
-            stats_y = screen.get_height() - scaled(screen, 200)
-            draw_stats(screen, game.player, scaled(screen, 80), stats_y)
-            draw_stats(screen, game.enemy, screen.get_width() - scaled(screen, 300), stats_y)
+            stats_y = scaled(screen, 70)
+            draw_stats(screen, game.player, scaled(screen, 28), stats_y)
+            draw_stats(screen, game.enemy, screen.get_width() - scaled(screen, 240), stats_y)
+
+        elif state == "battle_result":
+            self._draw_battle_background(screen)
+            elapsed = pygame.time.get_ticks() - game.result_started_at
+            progress = min(1.0, elapsed / 2200)
+            if game.battle:
+                game.battle.draw_outcome(screen, game.result, progress)
+            draw_battle_outcome_labels(screen, game.result)
+            draw_life_runes(screen, game.lives)
 
         elif state == "result":
             draw_game_over(screen)
@@ -69,3 +87,9 @@ class UIRenderer:
 
         elif state == "game_over":
             draw_game_over(screen)
+
+        if state in ("battle", "upgrade"):
+            draw_life_runes(screen, game.lives)
+            draw_pause_button(screen, mouse_pos)
+        if game.pause_open:
+            draw_pause_menu(screen, mouse_pos)

@@ -1,9 +1,11 @@
 import pygame
 import random
+import math
 
 from ui.draw import get_sprite
-from ui.layout import ui_scale
+from ui.layout import font, scaled, ui_scale
 from ui.combat_text import FloatingCombatText
+from ui.combat_effects import CombatEffects
 
 
 # ------------------------------------------------------------
@@ -158,6 +160,10 @@ class Battle:
 
         self.combat = CombatEngine()
         self.combat_texts = []
+        self.attack_animations = {}
+        self.reactions = {}
+        self.pending_visual_events = []
+        self.effects = CombatEffects()
 
         self.player_last_attack = 0
         self.enemy_last_attack = 0
@@ -191,13 +197,17 @@ class Battle:
         # PLAYER TURN
         if now - self.player_last_attack >= player_delay:
             if self.player.is_alive() and self.enemy.is_alive():
-                self._add_combat_events(self.combat.hit(self.player, self.enemy))
+                events = self.combat.hit(self.player, self.enemy)
+                self._add_combat_events(events)
+                self._start_visual_attack(self.player, events, now)
             self.player_last_attack = now
 
         # ENEMY TURN
         if now - self.enemy_last_attack >= enemy_delay:
             if self.enemy.is_alive() and self.player.is_alive():
-                self._add_combat_events(self.combat.hit(self.enemy, self.player))
+                events = self.combat.hit(self.enemy, self.player)
+                self._add_combat_events(events)
+                self._start_visual_attack(self.enemy, events, now)
             self.enemy_last_attack = now
 
         # PASSIVE TICKS
@@ -222,24 +232,172 @@ class Battle:
     # DRAW (unchanged, just stabilized)
     # --------------------------------------------------------
 
-    def draw(self, screen):
+    def draw(self, screen, animation_time=None):
+        now = pygame.time.get_ticks() if animation_time is None else animation_time
         width, height = screen.get_size()
         scale = ui_scale(screen)
         player_size = max(48, round(120 * scale * getattr(self.player, "size", 1.0)))
         enemy_size = max(48, round(120 * scale * getattr(self.enemy, "size", 1.0)))
-        y = round(height * 0.38)
-        player_x = round(width * 0.28 - player_size / 2)
-        enemy_x = round(width * 0.72 - enemy_size / 2)
-        self.draw_character(screen, self.player, player_x, y, player_size)
-        self.draw_character(screen, self.enemy, enemy_x, y, enemy_size)
+        ground_y = round(height * 0.745)
+        player_y = ground_y - player_size
+        enemy_y = ground_y - enemy_size
+        player_x = round(width * 0.37 - player_size / 2)
+        enemy_x = round(width * 0.63 - enemy_size / 2)
+        player_pose = self._pose(self.player, player_x, player_y, player_size, now, scale)
+        enemy_pose = self._pose(self.enemy, enemy_x, enemy_y, enemy_size, now, scale)
+        self.draw_character(screen, self.player, player_pose[0], player_pose[1], player_size, player_pose[2])
+        self.draw_character(screen, self.enemy, enemy_pose[0], enemy_pose[1], enemy_size, enemy_pose[2])
 
-        now = pygame.time.get_ticks()
         anchors = {
-            self.player: (player_x + player_size // 2, y + round(8 * scale)),
-            self.enemy: (enemy_x + enemy_size // 2, y + round(8 * scale)),
+            self.player: (player_pose[0] + player_size // 2, player_pose[1] + round(8 * scale)),
+            self.enemy: (enemy_pose[0] + enemy_size // 2, enemy_pose[1] + round(8 * scale)),
         }
+
+        base_positions = {
+            self.player: (player_x, player_y, player_size),
+            self.enemy: (enemy_x, enemy_y, enemy_size),
+        }
+        for event, attacker, event_time in self.pending_visual_events:
+            target = event["character"]
+            target_x, target_y, target_size = base_positions[target]
+            kind = event["kind"]
+            if kind == "dodge":
+                impact = (target_x + target_size // 2, target_y + round(target_size * 0.88))
+            elif kind == "heal":
+                impact = (target_x + target_size // 2, target_y + round(target_size * 0.42))
+            else:
+                direction = 1 if attacker is self.player else -1
+                impact = (
+                    target_x + target_size // 2 - direction * round(target_size * 0.28),
+                    target_y + round(target_size * 0.52),
+                )
+            self.effects.burst(impact, kind, event_time, scale)
+        self.pending_visual_events.clear()
+        self.effects.draw(screen, now)
         for item in self.combat_texts:
             item.draw(screen, anchors[item.character], scale, now)
+
+    def draw_outcome(self, screen, winner, progress):
+        width, height = screen.get_size()
+        scale = ui_scale(screen)
+        midpoint = width // 2
+        winner_is_player = winner == "player"
+        winner_rect = pygame.Rect(0 if winner_is_player else midpoint, 0, midpoint if winner_is_player else width - midpoint, height)
+        loser_rect = pygame.Rect(midpoint if winner_is_player else 0, 0, width - midpoint if winner_is_player else midpoint, height)
+
+        winner_tint = pygame.Surface(winner_rect.size, pygame.SRCALPHA)
+        winner_tint.fill((255, 232, 142, 36))
+        screen.blit(winner_tint, winner_rect)
+        loser_tint = pygame.Surface(loser_rect.size, pygame.SRCALPHA)
+        loser_tint.fill((105, 114, 128, 112))
+        screen.blit(loser_tint, loser_rect)
+        pygame.draw.line(screen, (206, 205, 186), (midpoint, 0), (midpoint, height), max(1, scaled(screen, 2)))
+
+        player_size = max(48, round(120 * scale * getattr(self.player, "size", 1.0)))
+        enemy_size = max(48, round(120 * scale * getattr(self.enemy, "size", 1.0)))
+        ground_y = round(height * 0.745)
+        layouts = (
+            (self.player, round(width * 0.37 - player_size / 2), ground_y - player_size, player_size, winner_is_player),
+            (self.enemy, round(width * 0.63 - enemy_size / 2), ground_y - enemy_size, enemy_size, not winner_is_player),
+        )
+
+        fall_progress = min(1.0, progress / 0.62)
+        fall_progress = fall_progress * fall_progress * (3 - 2 * fall_progress)
+        for character, x, y, size, is_winner in layouts:
+            if not character.sprite_name:
+                continue
+            image = get_sprite(character.sprite_name, (size, size))
+            if is_winner:
+                bounce = abs(math.sin(progress * math.tau * 2)) * 30 * scale
+                image = image.copy()
+                image.fill((30, 22, 0), special_flags=pygame.BLEND_RGB_ADD)
+                center = (x + size // 2, round(y + size / 2 - bounce))
+                angle = 0
+            else:
+                image = pygame.transform.grayscale(image)
+                fall_direction = 1 if x < midpoint else -1
+                center = (x + size // 2, round(y + size / 2 + fall_progress * 40 * scale))
+                angle = round(-fall_direction * 78 * fall_progress)
+                image = pygame.transform.rotate(image, angle)
+            screen.blit(image, image.get_rect(center=center))
+
+        confetti_colors = (
+            (255, 211, 75), (255, 105, 91), (93, 220, 163),
+            (106, 193, 255), (255, 238, 183), (210, 137, 255),
+        )
+        for index in range(34):
+            cycle = (progress * 1.35 + index * 0.137) % 1.0
+            x_range = max(1, winner_rect.width - scaled(screen, 24))
+            x = winner_rect.left + scaled(screen, 12) + ((index * 47 + round(progress * 23)) % x_range)
+            y = round(height * (0.08 + cycle * 0.64))
+            size = scaled(screen, 4 + index % 4)
+            color = confetti_colors[index % len(confetti_colors)]
+            pygame.draw.rect(screen, color, (x, y, size, max(2, size // 2)))
+
+    def _start_visual_attack(self, attacker, events, now):
+        direction = 1 if attacker is self.player else -1
+        self.attack_animations[attacker] = {"start": now, "direction": direction}
+
+        priorities = {"block": 1, "damage": 2, "critical": 3, "dodge": 3}
+        reaction = None
+        target = self.enemy if attacker is self.player else self.player
+        for event in events:
+            self.pending_visual_events.append((event, attacker, now))
+            if event["character"] is target and event["kind"] in priorities:
+                if reaction is None or priorities[event["kind"]] > priorities[reaction]:
+                    reaction = event["kind"]
+
+        if reaction is not None:
+            self.reactions[target] = {
+                "kind": reaction,
+                "start": now,
+                "direction": direction,
+            }
+
+    def _pose(self, character, x, y, size, now, scale):
+        offset_x = 0.0
+        offset_y = math.sin(now / 260 + (0 if character is self.player else math.pi)) * 2.2 * scale
+        flash = None
+        attack = self.attack_animations.get(character)
+        if attack is not None:
+            progress = (now - attack["start"]) / 360
+            if progress >= 1:
+                self.attack_animations.pop(character, None)
+            else:
+                outbound_end, hold_end = 0.34, 0.49
+                if progress < outbound_end:
+                    phase = progress / outbound_end
+                    lunge = phase * phase * (3 - 2 * phase)
+                elif progress < hold_end:
+                    lunge = 1.0
+                else:
+                    phase = (progress - hold_end) / (1 - hold_end)
+                    lunge = 1 - phase * phase * (3 - 2 * phase)
+                offset_x += attack["direction"] * 30 * scale * lunge
+
+        reaction = self.reactions.get(character)
+        if reaction is not None:
+            duration = 320 if reaction["kind"] == "dodge" else 260
+            progress = (now - reaction["start"]) / duration
+            if progress >= 1:
+                self.reactions.pop(character, None)
+            else:
+                wave = math.sin(math.pi * max(0.0, progress))
+                direction = reaction["direction"]
+                if reaction["kind"] == "dodge":
+                    offset_x += direction * 20 * scale * wave
+                    offset_y -= 16 * scale * wave
+                elif reaction["kind"] == "block":
+                    offset_x += direction * 5 * scale * wave
+                    flash = ((100, 205, 255), round(190 * max(0, 1 - progress / 0.68)))
+                else:
+                    force = 17 if reaction["kind"] == "critical" else 10
+                    offset_x += direction * force * scale * wave
+                    offset_y -= 4 * scale * wave
+                    color = (255, 203, 76) if reaction["kind"] == "critical" else (255, 255, 255)
+                    flash = (color, round(210 * max(0, 1 - progress / 0.55)))
+
+        return round(x + offset_x), round(y + offset_y), flash
 
     def _add_combat_events(self, events):
         for event in events:
@@ -272,17 +430,15 @@ class Battle:
                     magnitude += 1
             self.combat_texts.append(FloatingCombatText(character, kind, label, lane))
 
-    def draw_character(self, screen, char, x, y, size):
-
-        offset = 0
-        if char.is_alive():
-            offset = (pygame.time.get_ticks() // 200) % 4
-
-        y -= offset
-
+    def draw_character(self, screen, char, x, y, size, flash=None):
         if char.sprite_name:
             try:
                 img = get_sprite(char.sprite_name, (size, size))
+                if flash is not None and flash[1] > 0:
+                    img = img.copy()
+                    tint = pygame.Surface(img.get_size(), pygame.SRCALPHA)
+                    tint.fill((*flash[0], flash[1]))
+                    img.blit(tint, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
                 screen.blit(img, (x, y))
             except Exception as e:
                 print("SPRITE ERROR:", char.sprite_name, e)

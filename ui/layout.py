@@ -81,3 +81,27 @@ def selection_confirm_buttons(screen):
     start = pygame.Rect(first_x, button_y, button_width, button_height)
     back = pygame.Rect(first_x + button_width + gap, button_y, button_width, button_height)
     return modal, start, back
+
+
+def pause_layout(screen):
+    width, height = screen.get_size()
+    margin = scaled(screen, 18)
+    button_size = scaled(screen, 42)
+    pause_button = pygame.Rect(width - margin - button_size, margin, button_size, button_size)
+
+    modal_width = min(scaled(screen, 420), width - 2 * margin)
+    modal_height = min(scaled(screen, 330), height - 2 * margin)
+    modal = pygame.Rect(0, 0, modal_width, modal_height)
+    modal.center = (width // 2, height // 2)
+
+    close_size = scaled(screen, 34)
+    close = pygame.Rect(modal.right - scaled(screen, 16) - close_size, modal.top + scaled(screen, 14), close_size, close_size)
+    button_width = min(scaled(screen, 280), modal.width - scaled(screen, 56))
+    button_height = scaled(screen, 46)
+    gap = scaled(screen, 14)
+    buttons_top = modal.top + scaled(screen, 100)
+    first_x = modal.centerx - button_width // 2
+    continue_button = pygame.Rect(first_x, buttons_top, button_width, button_height)
+    settings_button = pygame.Rect(first_x, buttons_top + button_height + gap, button_width, button_height)
+    menu_button = pygame.Rect(first_x, buttons_top + 2 * (button_height + gap), button_width, button_height)
+    return pause_button, modal, continue_button, settings_button, menu_button, close

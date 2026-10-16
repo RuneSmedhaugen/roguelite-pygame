@@ -1,6 +1,6 @@
 import math
 import pygame
-from ui.layout import font, menu_buttons, scaled, select_back_button, selection_confirm_buttons, ui_scale
+from ui.layout import font, menu_buttons, pause_layout, scaled, select_back_button, selection_confirm_buttons, ui_scale
 
 # -------------------------
 # SPRITE CACHE (NO LAG ZONE)
@@ -16,8 +16,10 @@ def get_sprite(name, size=(120, 120)):
         SPRITE_CACHE[key] = pygame.transform.smoothscale(SPRITE_SOURCE_CACHE[name], size)
     return SPRITE_CACHE[key]
 
-def draw_menu(self, screen):
+def draw_menu(self, screen, menu_antics=None):
     screen.fill((20, 20, 30))
+    if menu_antics is not None:
+        menu_antics.draw(screen, pygame.time.get_ticks())
 
     font_big = font(screen, 80)
     button_font = font(screen, 40)
@@ -152,6 +154,115 @@ def draw_game_over(screen):
     screen.blit(title, title.get_rect(center=(screen.get_width() // 2, round(screen.get_height() * 0.40))))
     prompt = font(screen, 32).render("Run over. Click anywhere to return to the main menu", True, (205, 210, 225))
     screen.blit(prompt, prompt.get_rect(center=(screen.get_width() // 2, round(screen.get_height() * 0.57))))
+
+
+def draw_battle_outcome_labels(screen, winner):
+    width, height = screen.get_size()
+    midpoint = width // 2
+    winner_center = midpoint // 2 if winner == "player" else midpoint + (width - midpoint) // 2
+    loser_center = midpoint + (width - midpoint) // 2 if winner == "player" else midpoint // 2
+    victory = font(screen, 68, bold=True).render("VICTORY!", True, (255, 225, 135))
+    defeat = font(screen, 54, bold=True).render("DEFEATED", True, (203, 207, 214))
+    screen.blit(victory, victory.get_rect(center=(winner_center, round(height * 0.13))))
+    screen.blit(defeat, defeat.get_rect(center=(loser_center, round(height * 0.13))))
+
+
+def draw_pause_button(screen, mouse_pos):
+    button, *_ = pause_layout(screen)
+    hovered = button.collidepoint(mouse_pos)
+    color = (91, 106, 148) if hovered else (45, 52, 76)
+    pygame.draw.rect(screen, color, button, border_radius=scaled(screen, 8))
+    bar_width = scaled(screen, 5)
+    bar_height = scaled(screen, 18)
+    gap = scaled(screen, 5)
+    first_x = button.centerx - gap // 2 - bar_width
+    for x in (first_x, first_x + bar_width + gap):
+        pygame.draw.rect(
+            screen,
+            (245, 245, 255),
+            (x, button.centery - bar_height // 2, bar_width, bar_height),
+            border_radius=scaled(screen, 2),
+        )
+
+
+def draw_life_runes(screen, lives, max_lives=5):
+    label_font = font(screen, 20, bold=True)
+    label = label_font.render("LIVES", True, (225, 229, 239))
+    x = scaled(screen, 22)
+    y = scaled(screen, 18)
+    icon_size = scaled(screen, 23)
+    gap = scaled(screen, 6)
+    screen.blit(label, (x, y + (icon_size - label.get_height()) // 2))
+    x += label.get_width() + scaled(screen, 8)
+
+    for index in range(max_lives):
+        active = index < lives
+        points = [
+            (x + icon_size // 2, y),
+            (x + icon_size - 1, y + icon_size // 4),
+            (x + icon_size * 4 // 5, y + icon_size * 3 // 4),
+            (x + icon_size // 2, y + icon_size - 1),
+            (x + icon_size // 5, y + icon_size * 3 // 4),
+            (x, y + icon_size // 4),
+        ]
+        fill = (147, 91, 33) if active else (35, 42, 57)
+        edge = (255, 211, 105) if active else (91, 103, 127)
+        rune = (255, 240, 177) if active else (69, 80, 103)
+        pygame.draw.polygon(screen, fill, points)
+        pygame.draw.polygon(screen, edge, points, width=max(1, scaled(screen, 2)))
+
+        center_x = x + icon_size // 2
+        if active:
+            pygame.draw.line(
+                screen,
+                rune,
+                (center_x, y + scaled(screen, 5)),
+                (center_x, y + icon_size - scaled(screen, 5)),
+                max(1, scaled(screen, 2)),
+            )
+            pygame.draw.line(
+                screen,
+                rune,
+                (center_x - scaled(screen, 4), y + icon_size // 2),
+                (center_x + scaled(screen, 4), y + icon_size // 2),
+                max(1, scaled(screen, 2)),
+            )
+        x += icon_size + gap
+
+
+def draw_pause_menu(screen, mouse_pos):
+    overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+    overlay.fill((5, 8, 16, 165))
+    screen.blit(overlay, (0, 0))
+
+    _, modal, continue_button, settings_button, menu_button, close_button = pause_layout(screen)
+    pygame.draw.rect(screen, (31, 36, 53), modal, border_radius=scaled(screen, 16))
+    pygame.draw.rect(screen, (105, 122, 166), modal, width=scaled(screen, 2), border_radius=scaled(screen, 16))
+
+    title = font(screen, 48).render("PAUSED", True, (248, 242, 220))
+    screen.blit(title, title.get_rect(center=(modal.centerx, modal.top + scaled(screen, 55))))
+
+    for rect, label, base_color in (
+        (continue_button, "CONTINUE", (55, 119, 91)),
+        (settings_button, "SETTINGS", (62, 78, 116)),
+        (menu_button, "MAIN MENU", (112, 60, 65)),
+    ):
+        hovered = rect.collidepoint(mouse_pos)
+        color = tuple(min(255, channel + 18) for channel in base_color) if hovered else base_color
+        pygame.draw.rect(screen, color, rect, border_radius=scaled(screen, 8))
+        label_surface = font(screen, 25).render(label, True, (255, 255, 255))
+        screen.blit(label_surface, label_surface.get_rect(center=rect.center))
+
+    close_hovered = close_button.collidepoint(mouse_pos)
+    pygame.draw.rect(
+        screen,
+        (112, 64, 70) if close_hovered else (66, 51, 64),
+        close_button,
+        border_radius=scaled(screen, 7),
+    )
+    x_font = font(screen, 30, bold=True)
+    x_text = x_font.render("×", True, (255, 255, 255))
+    screen.blit(x_text, x_text.get_rect(center=close_button.center))
 
 
 # -------------------------

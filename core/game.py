@@ -8,7 +8,7 @@ from core.character_factory import build_character
 from core.character_factory import get_random_characters
 
 from ui.draw import draw_character_select
-from ui.layout import menu_buttons, select_back_button, selection_confirm_buttons
+from ui.layout import menu_buttons, pause_layout, select_back_button, selection_confirm_buttons
 
 
 class Game:
@@ -37,8 +37,14 @@ class Game:
         self.enemy = None
         self.battle = None
         self.result = None
+        self.result_started_at = None
         self.click_lock = False
         self.selected_upgrade = None
+        self.pause_open = False
+        self.pause_started_at = None
+        self.pause_return_state = None
+        self.settings_from_pause = False
+        self.escape_was_down = False
 
         # upgrades
         self.upgrades = []
@@ -74,15 +80,53 @@ class Game:
         self.enemy = None
         self.battle = None
         self.result = None
+        self.result_started_at = None
         self.pending_character_index = None
         self.hovered_index = None
+        self.pause_open = False
+        self.pause_started_at = None
+        self.pause_return_state = None
+        self.settings_from_pause = False
         self.state = "menu"
+
+    def _leave_pause_settings(self):
+        if self.settings_from_pause:
+            self.state = self.pause_return_state
+            self.pause_return_state = None
+            self.settings_from_pause = False
+            self.pause_open = True
+        else:
+            self.state = "menu"
+
+    def _open_pause(self):
+        if not self.pause_open:
+            self.pause_open = True
+            self.pause_started_at = pygame.time.get_ticks()
+
+    def _resume_from_pause(self):
+        if self.pause_started_at is not None:
+            paused_for = pygame.time.get_ticks() - self.pause_started_at
+            if self.battle is not None:
+                self.battle.player_last_attack += paused_for
+                self.battle.enemy_last_attack += paused_for
+                for combat_text in self.battle.combat_texts:
+                    combat_text.created_at += paused_for
+                for animation in (*self.battle.attack_animations.values(), *self.battle.reactions.values()):
+                    animation["start"] += paused_for
+                for effect in (*self.battle.effects.particles, *self.battle.effects.rings):
+                    effect["born"] += paused_for
+        self.pause_open = False
+        self.pause_started_at = None
 
     
     # -------------------------
     # UPDATE LOOP (LOGIC ONLY)
     # -------------------------
     def update(self, keys, mouse_pos, mouse_click, screen=None):
+        escape_down = bool(keys[pygame.K_ESCAPE])
+        escape_pressed = escape_down and not self.escape_was_down
+        self.escape_was_down = escape_down
+
         if not mouse_click:
             self.click_lock = False
 
@@ -97,6 +141,7 @@ class Game:
                     print("CLICK PLAY")
                     self.state = "select"
                 elif settings_button.collidepoint(mouse_pos):
+                    self.settings_from_pause = False
                     self.state = "settings"
                 elif exit_button.collidepoint(mouse_pos):
                     self.exit_requested = True
@@ -104,11 +149,14 @@ class Game:
             return
 
         if self.state == "settings":
+            if escape_pressed:
+                self._leave_pause_settings()
+                return
             if mouse_click and not self.click_lock and screen is not None:
                 self.click_lock = True
                 action, request = self.settings_screen.handle_click(screen, mouse_pos)
                 if action == "back":
-                    self.state = "menu"
+                    self._leave_pause_settings()
                 elif action == "apply":
                     self.display_request = request
             return
@@ -154,6 +202,36 @@ class Game:
                         return
             return
 
+        if self.state in ("battle", "upgrade"):
+            if escape_pressed:
+                if self.pause_open:
+                    self._resume_from_pause()
+                else:
+                    self._open_pause()
+                    return
+
+            if self.pause_open:
+                if mouse_click and not self.click_lock and screen is not None:
+                    self.click_lock = True
+                    _, _, continue_button, settings_button, menu_button, close_button = pause_layout(screen)
+                    if continue_button.collidepoint(mouse_pos) or close_button.collidepoint(mouse_pos):
+                        self._resume_from_pause()
+                    elif settings_button.collidepoint(mouse_pos):
+                        self.pause_return_state = self.state
+                        self.settings_from_pause = True
+                        self.pause_open = False
+                        self.state = "settings"
+                    elif menu_button.collidepoint(mouse_pos):
+                        self.reset_run()
+                return
+
+            if mouse_click and not self.click_lock and screen is not None:
+                pause_button, *_ = pause_layout(screen)
+                if pause_button.collidepoint(mouse_pos):
+                    self.click_lock = True
+                    self._open_pause()
+                    return
+
         # BATTLE
         if self.state == "battle":
             if not self.battle.finished:
@@ -165,6 +243,12 @@ class Game:
                     self.lives -= 1
                     print (f"LIFE LOST! Lives remaining: {self.lives}")
 
+                self.result_started_at = pygame.time.get_ticks()
+                self.state = "battle_result"
+            return
+
+        if self.state == "battle_result":
+            if pygame.time.get_ticks() - self.result_started_at >= 2200:
                 if self.lives <= 0:
                     self.state = "game_over"
                 else:
