@@ -1,5 +1,6 @@
 import pygame
 from core.game import Game
+from core.music import MusicPlaylist
 
 pygame.init()
 
@@ -36,9 +37,11 @@ def change_display(mode, size, display_index=0):
 change_display(DISPLAY_MODE, DISPLAY_SIZE)
 
 clock = pygame.time.Clock()
+music = MusicPlaylist()
 
-game = Game()
+game = Game(music)
 running = True
+music_started = False
 
 while running:
     clock.tick(60)
@@ -46,6 +49,9 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        elif event.type == music.ended_event:
+            music.play_next()
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_F11:
@@ -85,5 +91,10 @@ while running:
     game.draw(screen, mouse_pos)
 
     pygame.display.flip()
+
+    # Let the first menu frame reach the display before starting its music.
+    if not music_started and game.state == "menu":
+        music.start()
+        music_started = True
 
 pygame.quit()

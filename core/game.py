@@ -12,11 +12,15 @@ from ui.layout import menu_buttons, pause_layout, select_back_button, selection_
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, music=None):
         from ui.ui_renderer import UIRenderer
         from ui.settings import SettingsScreen
+        self.music = music
         self.ui = UIRenderer()
-        self.settings_screen = SettingsScreen()
+        self.settings_screen = SettingsScreen(
+            on_audio_change=music.set_audio_levels if music else None,
+            audio_levels=music.audio_levels if music else None,
+        )
         self.display_mode = "fullscreen"
         self.display_index = 0
         self.display_size = pygame.display.get_surface().get_size()
@@ -151,6 +155,9 @@ class Game:
         if self.state == "settings":
             if escape_pressed:
                 self._leave_pause_settings()
+                return
+            if screen is not None and self.settings_screen.handle_audio_drag(screen, mouse_pos, mouse_click):
+                self.click_lock = True
                 return
             if mouse_click and not self.click_lock and screen is not None:
                 self.click_lock = True

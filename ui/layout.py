@@ -42,17 +42,21 @@ def settings_layout(screen):
     panel.center = (width // 2, height // 2)
 
     inner = scaled(screen, 32)
-    row_height = scaled(screen, 52)
+    row_height = scaled(screen, 42)
     row_width = panel.width - 2 * inner
     mode = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 100), row_width, row_height)
-    monitor = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 190), row_width, row_height)
-    resolution = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 280), row_width, row_height)
+    monitor = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 162), row_width, row_height)
+    resolution = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 224), row_width, row_height)
+    slider_height = scaled(screen, 28)
+    master_volume = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 310), row_width, slider_height)
+    music_volume = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 360), row_width, slider_height)
+    effects_volume = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 410), row_width, slider_height)
     button_width = scaled(screen, 150)
     button_height = scaled(screen, 42)
-    button_y = panel.bottom - scaled(screen, 74)
+    button_y = panel.bottom - scaled(screen, 60)
     back = pygame.Rect(panel.left + inner, button_y, button_width, button_height)
     apply = pygame.Rect(panel.right - inner - button_width, button_y, button_width, button_height)
-    return panel, mode, monitor, resolution, back, apply
+    return panel, mode, monitor, resolution, master_volume, music_volume, effects_volume, back, apply
 
 
 def select_back_button(screen):
