@@ -13,6 +13,7 @@ from ui.draw import (
     draw_pause_menu,
     draw_life_runes,
     draw_battle_outcome_labels,
+    draw_feedback_screen,
 )
 
 
@@ -44,6 +45,15 @@ class UIRenderer:
 
         if state == "menu":
             draw_menu(game, screen, self.menu_antics)
+
+        elif state in ("feedback_type", "feedback_form"):
+            draw_feedback_screen(
+                screen,
+                state,
+                game.feedback_kind,
+                game.feedback_message,
+                game.feedback_status,
+            )
 
         elif state == "settings":
             game.settings_screen.draw(screen, mouse_pos)
@@ -80,13 +90,13 @@ class UIRenderer:
             draw_life_runes(screen, game.lives)
 
         elif state == "result":
-            draw_game_over(screen)
+            draw_game_over(screen, game, mouse_pos)
 
         elif state == "upgrade":
             game.upgrade_rects = draw_upgrades(screen, game.upgrades, game.result)
 
         elif state == "game_over":
-            draw_game_over(screen)
+            draw_game_over(screen, game, mouse_pos)
 
         if state in ("battle", "upgrade"):
             draw_life_runes(screen, game.lives)

@@ -19,6 +19,12 @@ Thumbs.db
 # Build / dist (future-proofing)
 build/
 dist/
+backend/feedback/node_modules/
+backend/feedback-deploy/
+backend/feedback-bundle.zip
+feedback-dashboard/node_modules/
+feedback-dashboard/dist/
+feedback-dashboard/.env.local
 
 # Logs
 *.log

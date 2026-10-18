@@ -24,13 +24,31 @@ def menu_buttons(screen):
     button_width = min(scaled(screen, 240), int(width * 0.72))
     button_height = scaled(screen, 64)
     gap = scaled(screen, 22)
-    total_height = button_height * 3 + gap * 2
+    total_height = button_height * 4 + gap * 3
     top = round(height * 0.60 - total_height / 2)
     left = (width - button_width) // 2
     return [
         pygame.Rect(left, top + i * (button_height + gap), button_width, button_height)
-        for i in range(3)
+        for i in range(4)
     ]
+
+
+def feedback_layout(screen):
+    width, height = screen.get_size()
+    margin = scaled(screen, 24)
+    panel_width = min(scaled(screen, 620), width - 2 * margin)
+    panel_height = min(scaled(screen, 430), height - 2 * margin)
+    panel = pygame.Rect(0, 0, panel_width, panel_height)
+    panel.center = (width // 2, height // 2)
+    inner = scaled(screen, 28)
+    button_height = scaled(screen, 48)
+    button_width = min(scaled(screen, 210), (panel.width - inner * 2 - scaled(screen, 16)) // 2)
+    buttons_y = panel.bottom - inner - button_height
+    first_x = panel.centerx - (button_width * 2 + scaled(screen, 16)) // 2
+    first = pygame.Rect(first_x, buttons_y, button_width, button_height)
+    second = pygame.Rect(first.right + scaled(screen, 16), buttons_y, button_width, button_height)
+    content = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 112), panel.width - inner * 2, buttons_y - panel.top - scaled(screen, 132))
+    return panel, content, first, second
 
 
 def settings_layout(screen):
@@ -57,6 +75,29 @@ def settings_layout(screen):
     back = pygame.Rect(panel.left + inner, button_y, button_width, button_height)
     apply = pygame.Rect(panel.right - inner - button_width, button_y, button_width, button_height)
     return panel, mode, monitor, resolution, master_volume, music_volume, effects_volume, back, apply
+
+
+def game_over_layout(screen):
+    width, height = screen.get_size()
+    margin = scaled(screen, 28)
+    button_width = min(scaled(screen, 220), (width - margin * 3) // 2)
+    button_height = scaled(screen, 48)
+    button_y = height - margin - button_height
+    gap = scaled(screen, 18)
+    total_width = button_width * 2 + gap
+    left = (width - total_width) // 2
+    retry = pygame.Rect(left, button_y, button_width, button_height)
+    menu = pygame.Rect(left + button_width + gap, button_y, button_width, button_height)
+
+    content_top = round(height * 0.29)
+    content_bottom = button_y - scaled(screen, 18)
+    content_height = max(scaled(screen, 80), content_bottom - content_top)
+    content_width = width - margin * 2
+    gap = scaled(screen, 14)
+    battle_width = round((content_width - gap) * 0.58)
+    battles = pygame.Rect(margin, content_top, battle_width, content_height)
+    upgrades = pygame.Rect(battles.right + gap, content_top, content_width - battle_width - gap, content_height)
+    return retry, menu, battles, upgrades
 
 
 def select_back_button(screen):

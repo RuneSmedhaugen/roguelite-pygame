@@ -8,11 +8,12 @@ from core.character_factory import build_character
 from core.character_factory import get_random_characters
 
 from ui.draw import draw_character_select
-from ui.layout import menu_buttons, pause_layout, select_back_button, selection_confirm_buttons
+from ui.feedback import FeedbackClient
+from ui.layout import feedback_layout, game_over_layout, menu_buttons, pause_layout, scaled, select_back_button, selection_confirm_buttons
 
 
 class Game:
-    def __init__(self, music=None):
+    def __init__(self, music=None, display_mode="fullscreen", display_size=None, display_index=0):
         from ui.ui_renderer import UIRenderer
         from ui.settings import SettingsScreen
         self.music = music
@@ -21,12 +22,18 @@ class Game:
             on_audio_change=music.set_audio_levels if music else None,
             audio_levels=music.audio_levels if music else None,
         )
-        self.display_mode = "fullscreen"
-        self.display_index = 0
-        self.display_size = pygame.display.get_surface().get_size()
+        self.display_mode = display_mode
+        self.display_index = display_index
+        self.display_size = display_size or pygame.display.get_surface().get_size()
         self.settings_screen.sync(self.display_mode, self.display_size, self.display_index)
         self.display_request = None
         self.exit_requested = False
+        self.feedback_client = FeedbackClient()
+        self.feedback_kind = None
+        self.feedback_message = ""
+        self.feedback_status = ""
+        self.feedback_sending = False
+        self.feedback_sent_at = None
 
         self.round = 1
         self.state = "menu"
@@ -34,6 +41,11 @@ class Game:
         # data
         self.lives = 5
         self.character_choices = []
+        self.run_character = None
+        self.battle_history = []
+        self.upgrade_history = []
+        self.game_over_battle_scroll = 0
+        self.game_over_upgrade_scroll = 0
         self.selected_index = None
         self.hovered_index = None
         self.pending_character_index = None
@@ -63,6 +75,7 @@ class Game:
         raw = self.character_choices[index]
 
         self.player = build_character(raw, x=150, y=250)
+        self.run_character = self.player.name
         self.player.color = (50, 150, 255)
 
         self.enemy = generate_enemy(self.round)
@@ -91,7 +104,26 @@ class Game:
         self.pause_started_at = None
         self.pause_return_state = None
         self.settings_from_pause = False
+        self.run_character = None
+        self.battle_history.clear()
+        self.upgrade_history.clear()
+        self.game_over_battle_scroll = 0
+        self.game_over_upgrade_scroll = 0
+        self.character_choices = get_random_characters(5)
         self.state = "menu"
+
+    def handle_game_over_scroll(self, amount, position, screen):
+        _, _, battles_rect, upgrades_rect = game_over_layout(screen)
+        row_height = scaled(screen, 28)
+        visible_rows = max(1, (battles_rect.height - scaled(screen, 52)) // row_height)
+        if battles_rect.collidepoint(position):
+            self.game_over_battle_scroll = max(
+                0, min(self.game_over_battle_scroll - amount, len(self.battle_history) - visible_rows)
+            )
+        elif upgrades_rect.collidepoint(position):
+            self.game_over_upgrade_scroll = max(
+                0, min(self.game_over_upgrade_scroll - amount, len(self.upgrade_history) - visible_rows)
+            )
 
     def _leave_pause_settings(self):
         if self.settings_from_pause:
@@ -122,6 +154,29 @@ class Game:
         self.pause_open = False
         self.pause_started_at = None
 
+    def _leave_feedback(self):
+        if self.state == "feedback_form":
+            pygame.key.stop_text_input()
+        self.feedback_kind = None
+        self.feedback_message = ""
+        self.feedback_status = ""
+        self.feedback_sending = False
+        self.feedback_sent_at = None
+        self.state = "menu"
+
+    def handle_event(self, event):
+        if self.state != "feedback_form" or self.feedback_sending:
+            return
+        if event.type == pygame.TEXTINPUT:
+            self.feedback_message = (self.feedback_message + event.text)[:4000]
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_BACKSPACE:
+                self.feedback_message = self.feedback_message[:-1]
+            elif event.key == pygame.K_RETURN:
+                self.feedback_message = (self.feedback_message + "\n")[:4000]
+            elif event.key == pygame.K_ESCAPE:
+                self._leave_feedback()
+
     
     # -------------------------
     # UPDATE LOOP (LOGIC ONLY)
@@ -139,7 +194,7 @@ class Game:
             if mouse_click and not self.click_lock:
                 self.click_lock = True
 
-                play_button, settings_button, exit_button = menu_buttons(screen or pygame.display.get_surface())
+                play_button, settings_button, feedback_button, exit_button = menu_buttons(screen or pygame.display.get_surface())
 
                 if play_button.collidepoint(mouse_pos):
                     print("CLICK PLAY")
@@ -147,9 +202,56 @@ class Game:
                 elif settings_button.collidepoint(mouse_pos):
                     self.settings_from_pause = False
                     self.state = "settings"
+                elif feedback_button.collidepoint(mouse_pos):
+                    self.feedback_kind = None
+                    self.feedback_message = ""
+                    self.feedback_status = ""
+                    self.state = "feedback_type"
                 elif exit_button.collidepoint(mouse_pos):
                     self.exit_requested = True
 
+            return
+
+        if self.state in ("feedback_type", "feedback_form"):
+            if self.feedback_sending:
+                result = self.feedback_client.take_result()
+                if result is not None:
+                    succeeded, status = result
+                    self.feedback_sending = False
+                    self.feedback_status = status
+                    if succeeded:
+                        self.feedback_sent_at = pygame.time.get_ticks()
+                return
+            if self.feedback_sent_at is not None:
+                if pygame.time.get_ticks() - self.feedback_sent_at >= 900:
+                    self._leave_feedback()
+                return
+            if escape_pressed:
+                self._leave_feedback()
+                return
+            if mouse_click and not self.click_lock and screen is not None:
+                self.click_lock = True
+                _, _, first, second = feedback_layout(screen)
+                if self.state == "feedback_type":
+                    if first.collidepoint(mouse_pos):
+                        self.feedback_kind = "bug_report"
+                        self.feedback_status = ""
+                        self.state = "feedback_form"
+                        pygame.key.start_text_input()
+                    elif second.collidepoint(mouse_pos):
+                        self.feedback_kind = "suggestion"
+                        self.feedback_status = ""
+                        self.state = "feedback_form"
+                        pygame.key.start_text_input()
+                elif first.collidepoint(mouse_pos):
+                    if not self.feedback_message.strip():
+                        self.feedback_status = "Please write a message first."
+                    else:
+                        self.feedback_sending = True
+                        self.feedback_status = "Sending..."
+                        self.feedback_client.submit(self.feedback_kind, self.feedback_message.strip())
+                elif second.collidepoint(mouse_pos):
+                    self._leave_feedback()
             return
 
         if self.state == "settings":
@@ -250,6 +352,15 @@ class Game:
                     self.lives -= 1
                     print (f"LIFE LOST! Lives remaining: {self.lives}")
 
+                self.battle_history.append({
+                    "round": self.round,
+                    "opponent": getattr(self.enemy, "name", "Unknown opponent"),
+                    "result": "Victory" if self.result == "player" else "Defeat",
+                    "player_hp": max(0, self.player.hp),
+                    "player_max_hp": self.player.max_hp,
+                    "lives": self.lives,
+                })
+
                 self.result_started_at = pygame.time.get_ticks()
                 self.state = "battle_result"
             return
@@ -273,6 +384,7 @@ class Game:
                     if r.collidepoint(mouse_pos):
 
                         upg = self.upgrades[i]
+                        self.upgrade_history.append({"round": self.round, "name": upg.get("name", "Upgrade")})
 
                         # -------- BEFORE SNAPSHOT --------
                         before = {
@@ -332,9 +444,14 @@ class Game:
             return
 
         if self.state == "game_over":
-            if mouse_click and not self.click_lock:
+            if mouse_click and not self.click_lock and screen is not None:
                 self.click_lock = True
-                self.reset_run()
+                retry_button, menu_button, _, _ = game_over_layout(screen)
+                if retry_button.collidepoint(mouse_pos):
+                    self.reset_run()
+                    self.state = "select"
+                elif menu_button.collidepoint(mouse_pos):
+                    self.reset_run()
             return
 
     # -------------------------

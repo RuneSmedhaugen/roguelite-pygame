@@ -62,7 +62,7 @@ class MusicPlaylist:
         if not self.enabled or not self.tracks:
             return
         self.current_index = 0
-        self._play_current()
+        self._play_current(fade_ms=1200)
 
     def play_next(self):
         # Rescan at each transition so newly added files are included without
@@ -78,11 +78,11 @@ class MusicPlaylist:
             self.current_index = 0
         self._play_current()
 
-    def _play_current(self):
+    def _play_current(self, fade_ms=0):
         try:
             pygame.mixer.music.load(str(self.tracks[self.current_index]))
             self._apply_music_volume()
-            pygame.mixer.music.play()
+            pygame.mixer.music.play(fade_ms=fade_ms)
         except pygame.error as exc:
             # Skip a file that the active mixer backend cannot decode.
             print(f"Could not play music '{self.tracks[self.current_index].name}': {exc}")

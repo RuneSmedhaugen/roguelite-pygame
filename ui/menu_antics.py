@@ -58,7 +58,7 @@ class MenuAntics:
 
         # Several small characters are always moving around the menu.
         self.bouncers = []
-        for index in range(3):
+        for index in range(2):
             size = round(base_size * self.rng.uniform(0.78, 1.0))
             self.bouncers.append({
                 "sprite": self._next_sprite(f"bounce-{index}"),
@@ -70,7 +70,7 @@ class MenuAntics:
             })
 
         self.hoppers = []
-        for index in range(2):
+        for index in range(1):
             size = round(base_size * self.rng.uniform(0.8, 1.05))
             x = self.rng.uniform(0, max(0, width - size))
             y = self.rng.uniform(height * 0.2, max(height * 0.2, height - size))

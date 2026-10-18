@@ -1,0 +1,64 @@
+:root {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #edf0f7;
+  background: #10131b;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  font-smooth: always;
+  --muted: #9299aa;
+  --line: #282d3b;
+  --surface: #181c27;
+  --green: #9fdbad;
+  --red: #f0a09b;
+}
+
+* { box-sizing: border-box; }
+body { min-width: 320px; min-height: 100vh; margin: 0; }
+button { font: inherit; }
+
+.app-shell { width: min(100% - 48px, 960px); margin: 0 auto; }
+.topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.brand { display: inline-flex; align-items: center; gap: 11px; color: #f3f4f8; text-decoration: none; font-weight: 700; }
+.brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; background: #c8ed9f; color: #1e2a19; font: 700 12px 'Segoe UI', system-ui, sans-serif; }
+.brand-muted { color: #8d95a8; font-weight: 500; }
+.refresh-button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border: 1px solid #343a4a; border-radius: 8px; background: #1b202c; color: #e3e7ef; cursor: pointer; transition: background .15s, border-color .15s; }
+.refresh-button:hover:not(:disabled) { background: #252b39; border-color: #4b5368; }
+.refresh-button:disabled { cursor: wait; opacity: .6; }
+.refresh-icon { font-size: 18px; line-height: 14px; }
+
+.page-heading { display: flex; align-items: end; justify-content: space-between; padding: 46px 0 30px; }
+.eyebrow { margin: 0 0 8px; color: #b4d78f; font-size: 11px; font-weight: 700; letter-spacing: .16em; }
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 8px; font: 600 clamp(32px, 6vw, 44px) 'Segoe UI', system-ui, sans-serif; letter-spacing: -.04em; }
+.subtitle { margin: 0; color: var(--muted); font-size: 14px; }
+.updated-at { margin: 0 0 3px; color: #747c8d; font-size: 12px; }
+
+.tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--line); }
+.tab { display: inline-flex; align-items: center; gap: 9px; padding: 14px 15px; border: 0; border-bottom: 2px solid transparent; background: none; color: #aeb4c2; cursor: pointer; font-size: 14px; }
+.tab:hover { color: #f2f3f7; }
+.tab.active { border-bottom-color: #c7ee9a; color: #f4f6f1; }
+.tab-dot { width: 7px; height: 7px; border-radius: 50%; }
+.bug-dot { background: #f09991; }
+.suggestion-dot { background: #a5dcae; }
+.tab-count { display: inline-grid; min-width: 22px; height: 20px; padding: 0 5px; place-items: center; border-radius: 10px; background: #252b38; color: #a9b1c1; font-size: 11px; }
+
+.submission-list { display: grid; gap: 12px; padding: 22px 0 44px; }
+.submission-card { padding: 18px 20px; border: 1px solid #292f3d; border-radius: 11px; background: linear-gradient(135deg, #1b202b, #171b25); box-shadow: 0 8px 22px #00000012; }
+.card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #858d9e; font-size: 12px; }
+.status { padding: 4px 9px; border: 1px solid #343a48; border-radius: 99px; background: #222733; color: #b9c0ce; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+.status-new { border-color: #725b36; background: #352d20; color: #e6c98c; }
+.message { margin: 15px 0 0; color: #e5e8ef; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; white-space: pre-wrap; }
+.empty-state, .loading-state { min-height: 230px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); text-align: center; }
+.empty-icon { margin-bottom: 12px; color: #c7ee9a; font-size: 25px; }
+.empty-state h2 { margin: 0 0 7px; color: #e6e9f0; font: 600 19px 'Segoe UI', system-ui, sans-serif; }
+.empty-state p { margin: 0; font-size: 13px; }
+.notice { margin-top: 18px; padding: 12px 14px; border: 1px solid #55403c; border-radius: 8px; background: #2b2224; color: #f0b6ae; font-size: 13px; }
+.notice.hidden { display: none; }
+.footer-note { padding: 16px 0 28px; border-top: 1px solid var(--line); color: #6f7788; font-size: 11px; }
+
+@media (max-width: 600px) {
+  .app-shell { width: min(100% - 30px, 960px); }
+  .page-heading { align-items: start; flex-direction: column; gap: 14px; padding-top: 34px; }
+  .tab { flex: 1; justify-content: center; padding-inline: 8px; font-size: 12px; }
+  .submission-card { padding: 15px; }
+}

@@ -1,6 +1,6 @@
 import math
 import pygame
-from ui.layout import font, menu_buttons, pause_layout, scaled, select_back_button, selection_confirm_buttons, ui_scale
+from ui.layout import feedback_layout, font, game_over_layout, menu_buttons, pause_layout, scaled, select_back_button, selection_confirm_buttons, ui_scale
 
 # -------------------------
 # SPRITE CACHE (NO LAG ZONE)
@@ -21,17 +21,103 @@ def draw_menu(self, screen, menu_antics=None):
     if menu_antics is not None:
         menu_antics.draw(screen, pygame.time.get_ticks())
 
-    font_big = font(screen, 80)
+    # Keep the logo in one clean line and size it to the space above the menu.
+    buttons = menu_buttons(screen)
+    title_font = pygame.font.SysFont("arial", scaled(screen, 54), bold=True)
+    title_text = "SMALL PUNCH PUPPIES"
+    max_width = int(screen.get_width() * 0.9)
+    while title_font.size(title_text)[0] > max_width and title_font.get_height() > scaled(screen, 20):
+        title_font = pygame.font.SysFont("arial", title_font.get_height() - 1, bold=True)
+    title = title_font.render(title_text, True, (255, 231, 174))
+    title_y = round(screen.get_height() * 0.12)
+    title_rect = title.get_rect(center=(screen.get_width() // 2, title_y + title.get_height() // 2))
+    screen.blit(title_font.render(title_text, True, (12, 14, 22)), title_rect.move(0, scaled(screen, 3)))
+    screen.blit(title, title_rect)
+
+    tagline_font = pygame.font.SysFont("arial", scaled(screen, 18))
+    tagline = tagline_font.render("TINY PAWS. HUGE BONKS.", True, (190, 199, 218))
+    tagline_y = title_rect.bottom + scaled(screen, 8)
+    available_bottom = buttons[0].top - scaled(screen, 12)
+    tagline_rect = tagline.get_rect(center=(screen.get_width() // 2, tagline_y + tagline.get_height() // 2))
+    if tagline_rect.bottom <= available_bottom:
+        screen.blit(tagline, tagline_rect)
+
+    alpha_text = "ALPHA  •  Bugs, balance issues & weird behaviour expected"
+    alpha_font = pygame.font.SysFont("arial", scaled(screen, 17), bold=True)
+    while alpha_font.size(alpha_text)[0] > screen.get_width() - scaled(screen, 28) and alpha_font.get_height() > 1:
+        alpha_font = pygame.font.SysFont("arial", alpha_font.get_height() - 1, bold=True)
+    alpha_note = alpha_font.render(alpha_text, True, (240, 214, 157))
+    alpha_rect = alpha_note.get_rect(center=(screen.get_width() // 2, screen.get_height() - scaled(screen, 25)))
+    alpha_panel = alpha_rect.inflate(scaled(screen, 24), scaled(screen, 12))
+    pygame.draw.rect(screen, (35, 32, 31), alpha_panel, border_radius=scaled(screen, 8))
+    screen.blit(alpha_note, alpha_rect)
+
     button_font = font(screen, 40)
 
-    title = font_big.render("TROLL GAME", True, (255, 255, 255))
-    screen.blit(title, title.get_rect(center=(screen.get_width() // 2, round(screen.get_height() * 0.23))))
-
-    labels = (("PLAY", (60, 120, 200)), ("SETTINGS", (80, 80, 80)), ("EXIT GAME", (120, 55, 55)))
+    labels = (("PLAY", (60, 120, 200)), ("SETTINGS", (80, 80, 80)), ("FEEDBACK", (74, 105, 88)), ("EXIT GAME", (120, 55, 55)))
     for rect, (label, color) in zip(menu_buttons(screen), labels):
         pygame.draw.rect(screen, color, rect, border_radius=scaled(screen, 10))
         text = button_font.render(label, True, (255, 255, 255))
         screen.blit(text, text.get_rect(center=rect.center))
+
+
+def draw_feedback_screen(screen, state, kind, message, status=""):
+    screen.fill((20, 20, 30))
+    panel, content, first, second = feedback_layout(screen)
+    pygame.draw.rect(screen, (34, 38, 53), panel, border_radius=scaled(screen, 14))
+    pygame.draw.rect(screen, (86, 94, 119), panel, width=scaled(screen, 2), border_radius=scaled(screen, 14))
+    title_font = font(screen, 42, bold=True)
+    body_font = font(screen, 25)
+    button_font = font(screen, 27, bold=True)
+    title = "SEND FEEDBACK" if state == "feedback_type" else ("BUG REPORT" if kind == "bug_report" else "SUGGESTION")
+    rendered_title = title_font.render(title, True, (245, 225, 151))
+    screen.blit(rendered_title, rendered_title.get_rect(center=(panel.centerx, panel.top + scaled(screen, 52))))
+
+    if state == "feedback_type":
+        pygame.draw.rect(screen, (145, 69, 64), first, border_radius=scaled(screen, 9))
+        pygame.draw.rect(screen, (71, 111, 86), second, border_radius=scaled(screen, 9))
+        for rect, label in ((first, "BUG REPORT"), (second, "SUGGESTION")):
+            text = button_font.render(label, True, (255, 255, 255))
+            screen.blit(text, text.get_rect(center=rect.center))
+        hint = body_font.render("What would you like to send?", True, (215, 218, 228))
+        screen.blit(hint, hint.get_rect(center=(panel.centerx, content.centery)))
+        escape_hint = font(screen, 18).render("Press ESC to return to the main menu", True, (150, 157, 176))
+        screen.blit(escape_hint, escape_hint.get_rect(center=(panel.centerx, panel.bottom - scaled(screen, 20))))
+    else:
+        pygame.draw.rect(screen, (16, 19, 28), content, border_radius=scaled(screen, 8))
+        pygame.draw.rect(screen, (107, 116, 143), content, width=scaled(screen, 2), border_radius=scaled(screen, 8))
+        margin = scaled(screen, 14)
+        lines = message.splitlines() or [""]
+        line_height = body_font.get_linesize()
+        max_lines = max(1, (content.height - margin * 2) // line_height)
+        visible = lines[-max_lines:]
+        for index, line in enumerate(visible):
+            # Wrap long lines to the available width.
+            words = line.split(" ")
+            wrapped, current = [], ""
+            for word in words:
+                trial = f"{current} {word}".strip()
+                if current and body_font.size(trial)[0] > content.width - margin * 2:
+                    wrapped.append(current)
+                    current = word
+                else:
+                    current = trial
+            wrapped.append(current)
+            for row, text_line in enumerate(wrapped):
+                y = content.top + margin + (index + row) * line_height
+                if y + line_height <= content.bottom - margin:
+                    screen.blit(body_font.render(text_line, True, (240, 240, 245)), (content.left + margin, y))
+        if not message:
+            hint = body_font.render("Write your message here...", True, (130, 136, 154))
+            screen.blit(hint, (content.left + margin, content.top + margin))
+        if status:
+            status_color = (235, 144, 120) if "failed" in status.lower() or "could not" in status.lower() else (232, 210, 145)
+            status_text = font(screen, 18).render(status, True, status_color)
+            screen.blit(status_text, status_text.get_rect(center=(panel.centerx, first.top - scaled(screen, 14))))
+        for rect, label, color in ((first, "SEND", (65, 125, 82)), (second, "CANCEL", (100, 68, 72))):
+            pygame.draw.rect(screen, color, rect, border_radius=scaled(screen, 9))
+            text = button_font.render(label, True, (255, 255, 255))
+            screen.blit(text, text.get_rect(center=rect.center))
 
 # -------------------------
 # TEXT WRAP (FIXED GLOBAL)
@@ -148,12 +234,72 @@ def draw_stats(screen, character, x, y):
         screen.blit(text, (x, y + scaled(screen, 30) + i * scaled(screen, 19)))
 
 
-def draw_game_over(screen):
+def draw_game_over(screen, game, mouse_pos):
     screen.fill((15, 15, 25))
-    title = font(screen, 88).render("YOU LOSE!", True, (255, 75, 75))
-    screen.blit(title, title.get_rect(center=(screen.get_width() // 2, round(screen.get_height() * 0.40))))
-    prompt = font(screen, 32).render("Run over. Click anywhere to return to the main menu", True, (205, 210, 225))
-    screen.blit(prompt, prompt.get_rect(center=(screen.get_width() // 2, round(screen.get_height() * 0.57))))
+    title = font(screen, 64, bold=True).render("RUN OVER", True, (255, 102, 102))
+    screen.blit(title, title.get_rect(center=(screen.get_width() // 2, round(screen.get_height() * 0.095))))
+
+    victories = sum(battle["result"] == "Victory" for battle in game.battle_history)
+    summary_text = (
+        f"{game.run_character or 'Your fighter'}  •  {len(game.battle_history)} battles  •  "
+        f"{victories} victories  •  {len(game.upgrade_history)} upgrades"
+    )
+    summary = font(screen, 25).render(summary_text, True, (205, 211, 229))
+    screen.blit(summary, summary.get_rect(center=(screen.get_width() // 2, round(screen.get_height() * 0.20))))
+
+    retry_button, menu_button, battles_rect, upgrades_rect = game_over_layout(screen)
+    panel_color = (29, 34, 49)
+    pygame.draw.rect(screen, panel_color, battles_rect, border_radius=scaled(screen, 10))
+    pygame.draw.rect(screen, panel_color, upgrades_rect, border_radius=scaled(screen, 10))
+    heading_font = font(screen, 25, bold=True)
+    row_font = font(screen, 20)
+    screen.blit(heading_font.render("BATTLES", True, (236, 214, 159)), (battles_rect.left + scaled(screen, 12), battles_rect.top + scaled(screen, 10)))
+    screen.blit(heading_font.render("UPGRADES", True, (166, 207, 238)), (upgrades_rect.left + scaled(screen, 12), upgrades_rect.top + scaled(screen, 10)))
+
+    row_height = scaled(screen, 28)
+    first_row_y = battles_rect.top + scaled(screen, 42)
+    visible_rows = max(1, (battles_rect.height - scaled(screen, 52)) // row_height)
+    screen.set_clip(battles_rect)
+    battle_rows = game.battle_history[game.game_over_battle_scroll:game.game_over_battle_scroll + visible_rows]
+    for index, battle in enumerate(battle_rows):
+        won = battle["result"] == "Victory"
+        result_color = (135, 220, 162) if won else (239, 126, 126)
+        result_text = "W" if won else "L"
+        details = (
+            f"R{battle['round']} [{result_text}] {battle['opponent']}  "
+            f"HP {int(battle['player_hp'])}/{int(battle['player_max_hp'])}  "
+            f"Lives {battle['lives']}"
+        )
+        row_y = first_row_y + index * row_height
+        screen.blit(row_font.render(details, True, result_color), (battles_rect.left + scaled(screen, 12), row_y))
+    screen.set_clip(None)
+
+    screen.set_clip(upgrades_rect)
+    upgrade_rows = game.upgrade_history[game.game_over_upgrade_scroll:game.game_over_upgrade_scroll + visible_rows]
+    if not game.upgrade_history:
+        empty = row_font.render("No upgrades chosen", True, (160, 166, 182))
+        screen.blit(empty, (upgrades_rect.left + scaled(screen, 12), first_row_y))
+    for index, upgrade in enumerate(upgrade_rows):
+        text = f"R{upgrade['round']}  {upgrade['name']}"
+        screen.blit(row_font.render(text, True, (218, 225, 239)), (upgrades_rect.left + scaled(screen, 12), first_row_y + index * row_height))
+    screen.set_clip(None)
+
+    if len(game.battle_history) > visible_rows:
+        hint = font(screen, 16).render("Scroll to see more", True, (143, 151, 173))
+        screen.blit(hint, (battles_rect.right - hint.get_width() - scaled(screen, 10), battles_rect.bottom - hint.get_height() - scaled(screen, 5)))
+    if len(game.upgrade_history) > visible_rows:
+        hint = font(screen, 16).render("Scroll to see more", True, (143, 151, 173))
+        screen.blit(hint, (upgrades_rect.right - hint.get_width() - scaled(screen, 10), upgrades_rect.bottom - hint.get_height() - scaled(screen, 5)))
+
+    for rect, label, color in (
+        (retry_button, "RETRY", (55, 119, 91)),
+        (menu_button, "MAIN MENU", (83, 91, 117)),
+    ):
+        hovered = rect.collidepoint(mouse_pos)
+        button_color = tuple(min(255, channel + 18) for channel in color) if hovered else color
+        pygame.draw.rect(screen, button_color, rect, border_radius=scaled(screen, 8))
+        text = font(screen, 25, bold=True).render(label, True, (255, 255, 255))
+        screen.blit(text, text.get_rect(center=rect.center))
 
 
 def draw_battle_outcome_labels(screen, winner):
