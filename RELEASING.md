@@ -2,7 +2,7 @@
 
 Windows testers install one ZIP once. After that, the game checks GitHub Releases at startup. If it finds a newer version, the main menu replaces **Play** with **Update Game**. Selecting it closes the game, lets the bundled helper replace the installed game folder, and starts the new version.
 
-For local playtesting, install the build dependencies once into the project's `.venv` with `python -m pip install -r requirements-build.txt`, then run `.\build_windows.ps1`. Launch `dist\SmallPunchPuppies\SmallPunchPuppies.exe`; the script also creates `SmallPunchPuppies-Windows-TO-SHARE.zip`. This local build does not need a GitHub release to launch.
+For local playtesting, install the build dependencies once into the project's `.venv` with `python -m pip install -r requirements-build.txt`, then run `.\build_windows.ps1`. Launch `dist\SmallPunchPuppies\SmallPunchPuppies.exe`; the script also creates `SmallPunchPuppies-Windows-v<VERSION>.zip`. This local build does not need a GitHub release to launch.
 
 ## Publishing a release
 
