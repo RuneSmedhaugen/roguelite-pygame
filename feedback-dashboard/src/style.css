@@ -44,16 +44,46 @@ h1 { margin-bottom: 8px; font: 600 clamp(32px, 6vw, 44px) 'Segoe UI', system-ui,
 
 .submission-list { display: grid; gap: 12px; padding: 22px 0 44px; }
 .submission-card { padding: 18px 20px; border: 1px solid #292f3d; border-radius: 11px; background: linear-gradient(135deg, #1b202b, #171b25); box-shadow: 0 8px 22px #00000012; }
+.ticket-topline { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 9px; }
+.ticket-title { padding: 0; border: 0; background: none; color: #edf0f7; cursor: pointer; text-align: left; font-size: 17px; font-weight: 700; }
+.ticket-title:hover { color: #c7ee9a; text-decoration: underline; }
 .card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #858d9e; font-size: 12px; }
 .status { padding: 4px 9px; border: 1px solid #343a48; border-radius: 99px; background: #222733; color: #b9c0ce; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
 .status-new { border-color: #725b36; background: #352d20; color: #e6c98c; }
 .message { margin: 15px 0 0; color: #e5e8ef; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; white-space: pre-wrap; }
+.ticket-summary { display: -webkit-box; margin-bottom: 0; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .empty-state, .loading-state { min-height: 230px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); text-align: center; }
 .empty-icon { margin-bottom: 12px; color: #c7ee9a; font-size: 25px; }
 .empty-state h2 { margin: 0 0 7px; color: #e6e9f0; font: 600 19px 'Segoe UI', system-ui, sans-serif; }
 .empty-state p { margin: 0; font-size: 13px; }
 .notice { margin-top: 18px; padding: 12px 14px; border: 1px solid #55403c; border-radius: 8px; background: #2b2224; color: #f0b6ae; font-size: 13px; }
 .notice.hidden { display: none; }
+.notice.success { border-color: #3e6248; background: #1d2b23; color: #b7e2c0; }
+.hidden { display: none !important; }
+.changelog-form { display: grid; gap: 15px; margin-top: 22px; padding: 20px; border: 1px solid #303748; border-radius: 12px; background: var(--surface); }
+.changelog-form h2 { margin: 0; font-size: 20px; }
+.changelog-form > label { display: grid; gap: 7px; color: #c4cad7; font-size: 13px; font-weight: 600; }
+.changelog-form input, .changelog-form textarea { width: 100%; padding: 11px 12px; border: 1px solid #363d4e; border-radius: 8px; background: #11151e; color: #edf0f7; font: inherit; font-weight: 400; resize: vertical; }
+.changelog-form input:focus, .changelog-form textarea:focus { outline: 2px solid #8dbf79; outline-offset: 1px; }
+.changelog-form fieldset { min-width: 0; padding: 12px; border: 1px solid #343a49; border-radius: 8px; }
+.changelog-form legend { padding: 0 6px; color: #aeb6c7; font-size: 12px; }
+.linked-tickets { display: grid; max-height: 180px; gap: 7px; overflow: auto; }
+.ticket-check { display: flex; align-items: start; gap: 9px; color: #cbd1de; font-size: 12px; }
+.ticket-check input { width: auto; margin: 2px 0 0; accent-color: #a8d58c; }
+.form-hint { margin: 0; color: var(--muted); font-size: 12px; }
+.publish-button { justify-self: end; padding: 10px 15px; border: 0; border-radius: 8px; background: #83ad72; color: #142015; cursor: pointer; font-weight: 700; }
+.publish-button:disabled { cursor: wait; opacity: .65; }
+.changelog-title { margin: 0; color: #eaf0e3; font-size: 18px; }
+.linked-ticket-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+.linked-ticket { padding: 6px 9px; border: 1px solid #3b4a3f; border-radius: 999px; background: #202b25; color: #b8dfbd; cursor: pointer; font-size: 11px; }
+.linked-ticket:hover { background: #2b3a30; }
+.ticket-dialog { position: fixed; width: min(620px, calc(100% - 32px)); max-height: min(80vh, 700px); padding: 28px; overflow: auto; border: 1px solid #3a4354; border-radius: 14px; background: #1a1f2a; color: #edf0f7; box-shadow: 0 24px 90px #0009; }
+.ticket-dialog::backdrop { background: #080a10bb; backdrop-filter: blur(3px); }
+.ticket-dialog h2 { max-width: calc(100% - 32px); margin-bottom: 10px; font-size: 23px; }
+.detail-meta { color: #929bad; font-size: 12px; }
+.detail-message { margin: 20px 0 0; color: #e2e6ef; line-height: 1.8; overflow-wrap: anywhere; white-space: pre-wrap; }
+.dialog-close { position: absolute; top: 10px; right: 12px; width: 34px; height: 34px; border: 0; border-radius: 7px; background: #2a303d; color: white; cursor: pointer; font-size: 23px; }
+.dialog-close:hover { background: #414958; }
 .footer-note { padding: 16px 0 28px; border-top: 1px solid var(--line); color: #6f7788; font-size: 11px; }
 
 @media (max-width: 600px) {
@@ -61,4 +91,7 @@ h1 { margin-bottom: 8px; font: 600 clamp(32px, 6vw, 44px) 'Segoe UI', system-ui,
   .page-heading { align-items: start; flex-direction: column; gap: 14px; padding-top: 34px; }
   .tab { flex: 1; justify-content: center; padding-inline: 8px; font-size: 12px; }
   .submission-card { padding: 15px; }
+  .tabs { gap: 0; }
+  .tab-count { display: none; }
+  .ticket-dialog { padding: 22px 18px; }
 }

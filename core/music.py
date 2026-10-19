@@ -4,12 +4,14 @@ from pathlib import Path
 
 import pygame
 
+from core.assets import asset_path
+
 
 class MusicPlaylist:
     SUPPORTED_EXTENSIONS = {".mp3", ".ogg", ".wav", ".m4a"}
 
     def __init__(self, folder=None):
-        self.folder = Path(folder) if folder else Path(__file__).resolve().parent.parent / "assets" / "sounds" / "music"
+        self.folder = Path(folder) if folder else asset_path("sounds", "music")
         self.ended_event = pygame.event.custom_type()
         self.tracks = []
         self.current_index = -1

@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#10131b" />
-    <title>Small Punch Puppies · Feedback</title>
+    <title>Small Punch Puppies · Player inbox</title>
   </head>
   <body>
     <main class="app-shell">
       <header class="topbar">
-        <a class="brand" href="#" aria-label="Small Punch Puppies feedback home">
+        <a class="brand" href="#" aria-label="Small Punch Puppies dashboard">
           <span class="brand-mark">SPP</span>
-          <span>Small Punch Puppies <span class="brand-muted">/ Feedback</span></span>
+          <span>Small Punch Puppies <span class="brand-muted">/ Dashboard</span></span>
         </a>
         <button id="refresh-button" class="refresh-button" type="button">
           <span class="refresh-icon" aria-hidden="true">↻</span>
@@ -21,28 +21,48 @@
 
       <section class="page-heading">
         <div>
-          <p class="eyebrow">PLAYER INBOX</p>
-          <h1>Feedback</h1>
-          <p class="subtitle">Bug reports and suggestions sent from the game.</p>
+          <p class="eyebrow">ALPHA CONTROL DESK</p>
+          <h1 id="page-title">Player inbox</h1>
+          <p id="page-subtitle" class="subtitle">Bug reports and player feedback sent from the game.</p>
         </div>
         <p id="updated-at" class="updated-at">Not loaded yet</p>
       </section>
 
-      <nav class="tabs" aria-label="Feedback type">
-        <button class="tab active" data-type="bug_report" type="button">
+      <nav class="tabs" aria-label="Dashboard sections">
+        <button class="tab active" data-view="tickets" data-type="bug_report" type="button">
           <span class="tab-dot bug-dot"></span>Bug reports
           <span id="bug-count" class="tab-count">—</span>
         </button>
-        <button class="tab" data-type="suggestion" type="button">
-          <span class="tab-dot suggestion-dot"></span>Suggestions
-          <span id="suggestion-count" class="tab-count">—</span>
+        <button class="tab" data-view="tickets" data-type="feedback" type="button">
+          <span class="tab-dot suggestion-dot"></span>Player feedback
+          <span id="feedback-count" class="tab-count">—</span>
         </button>
+        <button class="tab" data-view="changelog" type="button">Changelog</button>
       </nav>
 
       <section id="notice" class="notice hidden" role="status"></section>
-      <section id="submissions" class="submission-list" aria-live="polite"></section>
-      <footer class="footer-note">Stored privately in your Small Punch Puppies Neon database.</footer>
+      <section id="tickets-view">
+        <section id="submissions" class="submission-list" aria-live="polite"></section>
+      </section>
+      <section id="changelog-view" class="hidden">
+        <form id="changelog-form" class="changelog-form">
+          <h2>Publish an update</h2>
+          <label>Title <input name="title" maxlength="160" required placeholder="What changed?" /></label>
+          <label>Details <textarea name="body" maxlength="10000" required rows="4" placeholder="Write the player-facing update notes..."></textarea></label>
+          <fieldset>
+            <legend>Link related tickets (optional)</legend>
+            <div id="linked-tickets" class="linked-tickets"></div>
+          </fieldset>
+          <button class="publish-button" type="submit">Publish changelog</button>
+        </form>
+        <section id="changelog-list" class="submission-list" aria-live="polite"></section>
+      </section>
+      <footer class="footer-note">Player tickets and published updates are stored in the game database.</footer>
     </main>
+    <dialog id="ticket-detail" class="ticket-dialog">
+      <button id="close-ticket-detail" class="dialog-close" type="button" aria-label="Close">×</button>
+      <div id="ticket-detail-content"></div>
+    </dialog>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

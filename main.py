@@ -1,10 +1,20 @@
+import os
+import sys
+from pathlib import Path
+
 import pygame
+from core.assets import asset_path
 from core.game import Game
 from core.music import MusicPlaylist
+from core.sound_effects import SoundEffects
 from core.user_settings import load_settings, save_settings
 
+# Keep relative asset paths working when launched from a desktop shortcut.
+APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
+os.chdir(APP_ROOT)
+
 pygame.init()
-pygame.display.set_caption("Small Punch Puppies")
+pygame.display.set_caption("SPP")
 
 
 user_settings = load_settings()
@@ -44,19 +54,34 @@ except pygame.error:
     # be supported. Fall back to the primary display in a safe window.
     change_display("windowed", (1280, 720), 0)
 
+window_icon = pygame.image.load(str(asset_path("sprites", "hammy.png"))).convert_alpha()
+pygame.display.set_icon(pygame.transform.smoothscale(window_icon, (64, 64)))
+
 clock = pygame.time.Clock()
 music = MusicPlaylist()
 music.set_audio_levels(**user_settings["audio_levels"])
+sound_effects = SoundEffects(
+    master=user_settings["audio_levels"]["master"],
+    effects=user_settings["audio_levels"]["effects"],
+)
 audio_settings_dirty = False
 
 
 def apply_audio_levels(**levels):
     global audio_settings_dirty
     music.set_audio_levels(**levels)
+    sound_effects.set_audio_levels(**levels)
     user_settings["audio_levels"] = music.audio_levels
     audio_settings_dirty = True
 
-game = Game(music, DISPLAY_MODE, DISPLAY_SIZE, DISPLAY_INDEX)
+game = Game(
+    music,
+    DISPLAY_MODE,
+    DISPLAY_SIZE,
+    DISPLAY_INDEX,
+    sound_effects=sound_effects,
+    on_audio_change=apply_audio_levels,
+)
 game.display_mode = DISPLAY_MODE
 game.display_size = DISPLAY_SIZE
 game.display_index = DISPLAY_INDEX
@@ -95,7 +120,7 @@ while running:
         elif event.type == pygame.MOUSEWHEEL:
             if game.state == "settings":
                 game.settings_screen.handle_scroll(event.y)
-            elif game.state == "game_over":
+            elif game.state in ("game_over", "game_win"):
                 game.handle_game_over_scroll(event.y, pygame.mouse.get_pos(), screen)
 
     keys = pygame.key.get_pressed()

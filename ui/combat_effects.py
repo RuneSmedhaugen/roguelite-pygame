@@ -12,6 +12,7 @@ class CombatEffects:
         "block": ((76, 190, 255), (207, 244, 255)),
         "dodge": ((118, 198, 226), (222, 248, 255)),
         "heal": ((74, 225, 128), (208, 255, 218)),
+        "passive": ((255, 190, 59), (255, 244, 166)),
     }
 
     def __init__(self):
@@ -20,7 +21,7 @@ class CombatEffects:
 
     def burst(self, position, kind, now, scale):
         outer_color, inner_color = self.PALETTES[kind]
-        count = {"damage": 8, "critical": 14, "block": 8, "dodge": 7, "heal": 6}[kind]
+        count = {"damage": 8, "critical": 14, "block": 8, "dodge": 7, "heal": 6, "passive": 5}[kind]
         duration = 390 if kind == "critical" else 310
         for index in range(count):
             angle = (math.tau * index / count) - math.pi / 2

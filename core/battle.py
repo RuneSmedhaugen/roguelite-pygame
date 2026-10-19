@@ -7,12 +7,94 @@ from ui.layout import font, scaled, ui_scale
 from ui.combat_text import FloatingCombatText
 from ui.combat_effects import CombatEffects
 
+ATTACK_HIT_SOUND = "slap.m4a"
+DODGE_SOUND = "dodge.m4a"
+
 
 # ------------------------------------------------------------
 # COMBAT ENGINE
 # ------------------------------------------------------------
 
 class CombatEngine:
+
+    def resolve_defense_stats(self, unit):
+        stats = {"armor": unit.armor, "dodge": unit.dodge}
+        for passive in unit.passives:
+            stats = passive.modify_stats(unit, stats)
+        for passive in unit.passives:
+            stats["armor"] = passive.modify_armor(unit, stats["armor"])
+            stats["dodge"] = passive.modify_dodge(unit, stats["dodge"])
+        stats["armor"] = max(0, stats["armor"])
+        stats["dodge"] = min(max(stats["dodge"], 0), 0.95)
+        return stats
+
+    def resolve_attack_speed(self, unit):
+        speed = unit.attack_speed
+        for passive in unit.passives:
+            speed = passive.modify_attack_speed(unit, speed)
+        return max(0.1, speed)
+
+    def resolve_display_stats(self, unit):
+        """Return current passive-adjusted values without consuming combat RNG."""
+        def modified_attack(base_attack):
+            stats = {
+                "atk": base_attack,
+                "crit": unit.crit,
+                "armor": unit.armor,
+                "speed": unit.attack_speed,
+                "lifesteal": unit.lifesteal,
+                "dodge": unit.dodge,
+            }
+            for passive in unit.passives:
+                stats = passive.modify_stats(unit, stats)
+            attack = stats["atk"]
+            for passive in unit.passives:
+                attack = passive.modify_attack(unit, attack)
+            for passive in unit.passives:
+                attack = passive.modify_damage_dealt(unit, attack)
+            return attack
+
+        stats = {"atk": unit.atk_min, "crit": unit.crit, "armor": unit.armor,
+                 "speed": unit.attack_speed, "lifesteal": unit.lifesteal, "dodge": unit.dodge}
+        for passive in unit.passives:
+            stats = passive.modify_stats(unit, stats)
+
+        crit_min = crit_max = stats["crit"]
+        lifesteal = stats["lifesteal"]
+        for passive in unit.passives:
+            if getattr(passive, "passive_id", None) == "pure_crit_spike":
+                crit_max += passive.cap
+            else:
+                crit_min = passive.modify_crit(unit, crit_min)
+                crit_max = passive.modify_crit(unit, crit_max)
+            lifesteal = passive.modify_lifesteal(unit, lifesteal)
+
+        defense = self.resolve_defense_stats(unit)
+        return {
+            "hp": unit.hp,
+            "max_hp": unit.max_hp,
+            "atk_min": modified_attack(unit.atk_min),
+            "atk_max": modified_attack(unit.atk_max),
+            "speed": self.resolve_attack_speed(unit),
+            "crit_min": min(max(crit_min, 0), 0.95),
+            "crit_max": min(max(crit_max, 0), 0.95),
+            "dodge": defense["dodge"],
+            "lifesteal": lifesteal,
+            "armor": defense["armor"],
+        }
+
+    @staticmethod
+    def _passive_events(units):
+        events = []
+        seen = set()
+        for unit in units:
+            if id(unit) in seen:
+                continue
+            seen.add(id(unit))
+            for passive in unit.passives:
+                for message in passive.take_notifications():
+                    events.append({"kind": "passive", "character": unit, "label": message})
+        return events
 
     def resolve_attack_stats(self, attacker):
 
@@ -57,10 +139,7 @@ class CombatEngine:
         atk_stats = atk_stats or self.resolve_attack_stats(attacker)
 
         # minimal & stable defense stats (no RNG reuse bug)
-        def_stats = def_stats or {
-            "dodge": target.dodge,
-            "armor": target.armor
-        }
+        def_stats = def_stats or self.resolve_defense_stats(target)
 
         # -------------------------
         # 1. DODGE CHECK
@@ -68,7 +147,7 @@ class CombatEngine:
         if random.random() < def_stats["dodge"]:
             for p in target.passives:
                 p.on_dodge(target)
-            return [{"kind": "dodge", "character": target}]
+            return [{"kind": "dodge", "character": target}, *self._passive_events((target,))]
 
         # -------------------------
         # 2. BASE DAMAGE
@@ -87,6 +166,10 @@ class CombatEngine:
         # -------------------------
         for p in attacker.passives:
             dmg = p.modify_damage_dealt(attacker, dmg)
+
+        # Hit callbacks may alter damage; apply their result before mitigation.
+        for p in attacker.passives:
+            dmg = p.on_hit_dealt(attacker, target, dmg)
 
         # -------------------------
         # 5. TARGET MITIGATION
@@ -114,9 +197,6 @@ class CombatEngine:
         for p in target.passives:
             p.on_hit_taken(target, attacker, dmg)
 
-        for p in attacker.passives:
-            p.on_hit_dealt(attacker, target, dmg)
-
         if is_crit:
             for p in attacker.passives:
                 p.on_crit(attacker, target, dmg)
@@ -142,6 +222,7 @@ class CombatEngine:
             events.append({"kind": "block", "character": target, "amount": armor_blocked})
         if actual_heal > 0:
             events.append({"kind": "heal", "character": attacker, "amount": actual_heal})
+        events.extend(self._passive_events((attacker, target)))
         return events
 
 
@@ -151,9 +232,10 @@ class CombatEngine:
 
 class Battle:
 
-    def __init__(self, player, enemy):
+    def __init__(self, player, enemy, sound_effects=None):
         self.player = player
         self.enemy = enemy
+        self.sound_effects = sound_effects
 
         self.finished = False
         self.winner = None
@@ -170,6 +252,7 @@ class Battle:
 
         # combat start hooks
         for unit in (self.player, self.enemy):
+            unit.status_effects.clear()
             for p in unit.passives:
                 p.on_combat_start(unit)
 
@@ -188,8 +271,8 @@ class Battle:
 
         # resolve speed safely
 
-        player_speed = max(0.1, self.player.attack_speed)
-        enemy_speed = max(0.1, self.enemy.attack_speed)
+        player_speed = self.combat.resolve_attack_speed(self.player)
+        enemy_speed = self.combat.resolve_attack_speed(self.enemy)
 
         player_delay = 1000 / player_speed
         enemy_delay = 1000 / enemy_speed
@@ -198,6 +281,9 @@ class Battle:
         if now - self.player_last_attack >= player_delay:
             if self.player.is_alive() and self.enemy.is_alive():
                 events = self.combat.hit(self.player, self.enemy)
+                if self.sound_effects:
+                    sound = DODGE_SOUND if any(event["kind"] == "dodge" for event in events) else ATTACK_HIT_SOUND
+                    self.sound_effects.play(sound)
                 self._add_combat_events(events)
                 self._start_visual_attack(self.player, events, now)
             self.player_last_attack = now
@@ -206,6 +292,9 @@ class Battle:
         if now - self.enemy_last_attack >= enemy_delay:
             if self.enemy.is_alive() and self.player.is_alive():
                 events = self.combat.hit(self.enemy, self.player)
+                if self.sound_effects:
+                    sound = DODGE_SOUND if any(event["kind"] == "dodge" for event in events) else ATTACK_HIT_SOUND
+                    self.sound_effects.play(sound)
                 self._add_combat_events(events)
                 self._start_visual_attack(self.enemy, events, now)
             self.enemy_last_attack = now
@@ -218,6 +307,10 @@ class Battle:
                 continue
             for p in unit.passives:
                 p.on_tick(unit, dt)
+        self._add_combat_events(self.combat._passive_events((self.player, self.enemy)))
+
+        for unit in (self.player, self.enemy):
+            self._add_combat_events(unit.update_status_effects(dt))
 
         # END CONDITION
         if not self.player.is_alive() or not self.enemy.is_alive():
@@ -276,6 +369,41 @@ class Battle:
         self.effects.draw(screen, now)
         for item in self.combat_texts:
             item.draw(screen, anchors[item.character], scale, now)
+
+    def draw_intro(self, screen, speaker, progress, animation_time=None):
+        """Show each fighter speaking in turn before combat begins."""
+        now = pygame.time.get_ticks() if animation_time is None else animation_time
+        width, height = screen.get_size()
+        scale = ui_scale(screen)
+        ground_y = round(height * 0.745)
+        midpoint = width // 2
+
+        for character, side in ((self.player, "left"), (self.enemy, "right")):
+            base_size = max(48, round(120 * scale * getattr(character, "size", 1.0)))
+            center_x = round(width * (0.37 if side == "left" else 0.63))
+            speaking = character is speaker
+            if speaking:
+                swell = math.sin(math.pi * max(0.0, min(1.0, progress)))
+                shake = math.sin(progress * math.tau * 5) * scaled(screen, 6) * swell
+                size = round(base_size * (1 + 0.17 * swell))
+                y_bob = -round(scaled(screen, 6) * swell)
+                center_x += round(shake)
+            else:
+                size = base_size
+                y_bob = round(math.sin(now / 260 + (0 if side == "left" else math.pi)) * scaled(screen, 2))
+
+            x = center_x - size // 2
+            y = ground_y - size + y_bob
+            self.draw_character(screen, character, x, y, size)
+
+            if speaking:
+                label = font(screen, 30, bold=True).render(f"{character.name}!", True, (255, 229, 158))
+                label_rect = label.get_rect(center=(center_x, y - scaled(screen, 24)))
+                shadow = font(screen, 30, bold=True).render(f"{character.name}!", True, (22, 21, 28))
+                screen.blit(shadow, shadow.get_rect(center=(label_rect.centerx, label_rect.centery + scaled(screen, 2))))
+                screen.blit(label, label_rect)
+
+        pygame.draw.line(screen, (88, 79, 72), (midpoint, round(height * 0.57)), (midpoint, height), max(1, scaled(screen, 2)))
 
     def draw_outcome(self, screen, winner, progress):
         width, height = screen.get_size()
@@ -403,7 +531,9 @@ class Battle:
         for event in events:
             kind = event["kind"]
             amount = event.get("amount")
-            if amount is None:
+            if kind == "passive":
+                label = event.get("label", "PASSIVE!")
+            elif amount is None:
                 label = "DODGED!"
             else:
                 value = f"{amount:.1f}" if 0 < amount < 1 else str(round(amount))
@@ -413,7 +543,7 @@ class Battle:
                     "block": f"BLOCKED {value}",
                     "heal": f"+{value} HP",
                 }
-                label = labels[kind]
+                label = event.get("label", labels[kind])
             character = event["character"]
             occupied_lanes = {
                 item.lane for item in self.combat_texts

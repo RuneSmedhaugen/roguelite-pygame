@@ -33,5 +33,8 @@ class CharacterData:
 
     name: str = "Unknown"
     sprite_name: str = None
+    intro_sound: Optional[str] = None
+    win_sound: Optional[str] = None
+    lose_sound: Optional[str] = None
 
     passives: List[str] = None

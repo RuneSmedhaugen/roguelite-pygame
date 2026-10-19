@@ -4,6 +4,7 @@ import json
 import os
 import queue
 import threading
+import urllib.parse
 import urllib.error
 import urllib.request
 
@@ -18,13 +19,19 @@ class FeedbackClient:
             os.environ.get("TROLLGAME_FEEDBACK_URL", DEFAULT_FEEDBACK_URL),
         ).strip()
         self.results = queue.Queue()
+        self.changelog_results = queue.Queue()
 
-    def submit(self, kind, message):
+    def submit(self, kind, title, message, severity=None):
         if not self.api_url:
             self.results.put((False, "Feedback sending isn't configured yet."))
             return
 
-        payload = json.dumps({"type": kind, "message": message}).encode("utf-8")
+        payload = json.dumps({
+            "type": kind,
+            "title": title,
+            "message": message,
+            "severity": severity,
+        }).encode("utf-8")
 
         def send():
             request = urllib.request.Request(
@@ -46,8 +53,32 @@ class FeedbackClient:
 
         threading.Thread(target=send, daemon=True).start()
 
+    def fetch_changelog(self):
+        if not self.api_url:
+            self.changelog_results.put((False, "Changelog isn't available right now."))
+            return
+
+        endpoint = urllib.parse.urljoin(self.api_url.rstrip("/") + "/", "changelog")
+
+        def fetch():
+            request = urllib.request.Request(endpoint, method="GET")
+            try:
+                with urllib.request.urlopen(request, timeout=12) as response:
+                    data = json.loads(response.read().decode("utf-8"))
+                    self.changelog_results.put((True, data.get("entries", [])))
+            except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+                self.changelog_results.put((False, "Could not load changelog. Check your connection and try again."))
+
+        threading.Thread(target=fetch, daemon=True).start()
+
     def take_result(self):
         try:
             return self.results.get_nowait()
+        except queue.Empty:
+            return None
+
+    def take_changelog_result(self):
+        try:
+            return self.changelog_results.get_nowait()
         except queue.Empty:
             return None

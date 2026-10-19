@@ -36,6 +36,9 @@ def build_character(raw, x=150, y=250, scale=1.0):
         rarity=raw.get("rarity", "common"),
         name=raw["name"],
         sprite_name=raw.get("sprite"),
+        intro_sound=raw.get("intro_sound"),
+        win_sound=raw.get("win_sound"),
+        lose_sound=raw.get("lose_sound"),
         passives=passives
     )
 

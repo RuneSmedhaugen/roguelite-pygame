@@ -1,5 +1,6 @@
 import pygame
 
+from core.assets import asset_path
 from ui.layout import scaled
 from ui.menu_antics import MenuAntics
 from ui.draw import (
@@ -11,9 +12,13 @@ from ui.draw import (
     draw_upgrades,
     draw_pause_button,
     draw_pause_menu,
+    draw_global_feedback_button,
     draw_life_runes,
     draw_battle_outcome_labels,
     draw_feedback_screen,
+    draw_changelog_screen,
+    draw_mode_select,
+    draw_passive_status,
 )
 
 
@@ -30,7 +35,7 @@ class UIRenderer:
 
         if _BATTLE_BACKGROUND is None:
             _BATTLE_BACKGROUND = pygame.image.load(
-                "assets/background/Rune_bakgrunn.png"
+                str(asset_path("background", "Rune_bakgrunn.png"))
             ).convert()
 
         size = screen.get_size()
@@ -46,14 +51,24 @@ class UIRenderer:
         if state == "menu":
             draw_menu(game, screen, self.menu_antics)
 
+        elif state == "mode_select":
+            draw_mode_select(screen, mouse_pos)
+
         elif state in ("feedback_type", "feedback_form"):
             draw_feedback_screen(
                 screen,
                 state,
                 game.feedback_kind,
+                game.feedback_title,
                 game.feedback_message,
+                game.feedback_severity,
+                game.feedback_focus,
+                game.feedback_severity_open,
                 game.feedback_status,
             )
+
+        elif state == "changelog":
+            draw_changelog_screen(screen, game.changelog_entries, game.changelog_loading, game.changelog_error)
 
         elif state == "settings":
             game.settings_screen.draw(screen, mouse_pos)
@@ -67,39 +82,67 @@ class UIRenderer:
                 confirmation_index=game.pending_character_index,
             )
 
-        elif state == "battle":
+        elif state in ("battle_intro", "battle"):
             self._draw_battle_background(screen)
             draw_round(screen, game.round)
 
             if game.battle:
                 frozen_time = game.pause_started_at if game.pause_open else None
-                game.battle.draw(screen, animation_time=frozen_time)
+                if state == "battle_intro":
+                    now = frozen_time if frozen_time is not None else pygame.time.get_ticks()
+                    elapsed = now - game.battle_intro_started_at
+                    progress = min(1.0, elapsed / max(1, game.battle_intro_duration_ms))
+                    game.battle.draw_intro(
+                        screen,
+                        game.battle_intro_character,
+                        progress,
+                        animation_time=now,
+                    )
+                else:
+                    game.battle.draw(screen, animation_time=frozen_time)
 
             # player + enemy stats
             stats_y = scaled(screen, 70)
-            draw_stats(screen, game.player, scaled(screen, 28), stats_y)
-            draw_stats(screen, game.enemy, screen.get_width() - scaled(screen, 240), stats_y)
+            draw_stats(
+                screen,
+                game.player,
+                scaled(screen, 28),
+                stats_y,
+                game.battle.combat.resolve_display_stats(game.player),
+            )
+            draw_stats(
+                screen,
+                game.enemy,
+                screen.get_width() - scaled(screen, 240),
+                stats_y,
+                game.battle.combat.resolve_display_stats(game.enemy),
+            )
+            draw_passive_status(screen, game.player, "left")
+            draw_passive_status(screen, game.enemy, "right")
 
         elif state == "battle_result":
             self._draw_battle_background(screen)
-            elapsed = pygame.time.get_ticks() - game.result_started_at
-            progress = min(1.0, elapsed / 2200)
+            animation_time = game.pause_started_at if game.pause_open else pygame.time.get_ticks()
+            elapsed = animation_time - game.result_started_at
+            progress = min(1.0, elapsed / max(1, game.result_duration_ms))
             if game.battle:
                 game.battle.draw_outcome(screen, game.result, progress)
             draw_battle_outcome_labels(screen, game.result)
             draw_life_runes(screen, game.lives)
 
-        elif state == "result":
-            draw_game_over(screen, game, mouse_pos)
-
         elif state == "upgrade":
             game.upgrade_rects = draw_upgrades(screen, game.upgrades, game.result)
 
         elif state == "game_over":
-            draw_game_over(screen, game, mouse_pos)
+            draw_game_over(screen, game, mouse_pos, won=False)
 
-        if state in ("battle", "upgrade"):
+        elif state == "game_win":
+            draw_game_over(screen, game, mouse_pos, won=True)
+
+        if state in ("battle_intro", "battle", "battle_result", "upgrade"):
             draw_life_runes(screen, game.lives)
             draw_pause_button(screen, mouse_pos)
         if game.pause_open:
             draw_pause_menu(screen, mouse_pos)
+        elif state not in ("feedback_type", "feedback_form"):
+            draw_global_feedback_button(screen, mouse_pos)

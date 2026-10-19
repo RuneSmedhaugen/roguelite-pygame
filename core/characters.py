@@ -48,7 +48,7 @@ CHARACTERS = [
 
     {
         "id": "hammy2",
-        "name": "Hammy",
+        "name": "Hamburglar",
         "sprite": "hammy2.png",
         "hp": 110,
         "hp_growth": 10,
@@ -414,3 +414,10 @@ CHARACTERS = [
         "description": "Unstable experiment that occasionally spikes in power."
     }
 ]
+
+# Optional filenames relative to assets/sounds/soundFX. Leave unset until clips
+# have been selected for each character.
+for character in CHARACTERS:
+    character.setdefault("intro_sound", None)
+    character.setdefault("win_sound", None)
+    character.setdefault("lose_sound", None)

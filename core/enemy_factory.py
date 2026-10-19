@@ -30,6 +30,13 @@ def generate_enemy(round_number):
     enemy_data["atk_min"] = int(enemy_data["atk_min"] * random.uniform(0.9, 1.1))
     enemy_data["atk_max"] = int(enemy_data["atk_max"] * random.uniform(0.9, 1.2))
 
+    # Give new runs a slightly more forgiving opening fight without changing
+    # the enemy scaling or balance on later levels.
+    if round_number == 1:
+        enemy_data["hp"] = max(1, int(enemy_data["hp"] * 0.9))
+        enemy_data["atk_min"] = max(1, int(enemy_data["atk_min"] * 0.9))
+        enemy_data["atk_max"] = max(enemy_data["atk_min"], int(enemy_data["atk_max"] * 0.9))
+
     # -------------------------
     # POSITION + COLOR OVERRIDE FOR ENEMY SIDE
     # -------------------------

@@ -11,6 +11,7 @@ class FloatingCombatText:
         "dodge": 700,
         "block": 700,
         "heal": 700,
+        "passive": 900,
     }
     COLORS = {
         "damage": (255, 105, 82),
@@ -18,6 +19,7 @@ class FloatingCombatText:
         "dodge": (255, 85, 105),
         "block": (125, 205, 255),
         "heal": (105, 255, 145),
+        "passive": (255, 226, 112),
     }
 
     def __init__(self, character, kind, text, lane=0):
@@ -40,6 +42,7 @@ class FloatingCombatText:
             "dodge": (-0.68, -0.73),
             "block": (-0.68, -0.73),
             "heal": (0.68, -0.73),
+            "passive": (0.0, -1.0),
         }
         dx, dy = directions[self.kind]
         perpendicular = (-dy, dx)

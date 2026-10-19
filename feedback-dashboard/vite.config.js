@@ -25,6 +25,16 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
+        '/api/changelog': {
+          target: env.FEEDBACK_API_URL || defaultApiUrl,
+          changeOrigin: true,
+          rewrite: () => '/changelog',
+          configure(proxy) {
+            proxy.on('proxyReq', (proxyRequest) => {
+              proxyRequest.setHeader('authorization', `Bearer ${adminToken}`);
+            });
+          },
+        },
       },
     },
   };

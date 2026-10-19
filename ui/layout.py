@@ -22,33 +22,56 @@ def font(screen, base_size, bold=False):
 def menu_buttons(screen):
     width, height = screen.get_size()
     button_width = min(scaled(screen, 240), int(width * 0.72))
-    button_height = scaled(screen, 64)
-    gap = scaled(screen, 22)
-    total_height = button_height * 4 + gap * 3
-    top = round(height * 0.60 - total_height / 2)
+    button_height = scaled(screen, 54)
+    gap = scaled(screen, 14)
+    total_height = button_height * 5 + gap * 4
+    top = round(height * 0.62 - total_height / 2)
     left = (width - button_width) // 2
     return [
         pygame.Rect(left, top + i * (button_height + gap), button_width, button_height)
-        for i in range(4)
+        for i in range(5)
     ]
+
+
+def mode_select_buttons(screen):
+    width, height = screen.get_size()
+    button_width = min(scaled(screen, 360), int(width * 0.78))
+    button_height = scaled(screen, 72)
+    gap = scaled(screen, 22)
+    left = (width - button_width) // 2
+    top = round(height * 0.47)
+    return (
+        pygame.Rect(left, top, button_width, button_height),
+        pygame.Rect(left, top + button_height + gap, button_width, button_height),
+        pygame.Rect(left, top + (button_height + gap) * 2, button_width, scaled(screen, 48)),
+    )
 
 
 def feedback_layout(screen):
     width, height = screen.get_size()
     margin = scaled(screen, 24)
     panel_width = min(scaled(screen, 620), width - 2 * margin)
-    panel_height = min(scaled(screen, 430), height - 2 * margin)
+    panel_height = min(scaled(screen, 500), height - 2 * margin)
     panel = pygame.Rect(0, 0, panel_width, panel_height)
     panel.center = (width // 2, height // 2)
     inner = scaled(screen, 28)
-    button_height = scaled(screen, 48)
+    button_height = scaled(screen, 44)
     button_width = min(scaled(screen, 210), (panel.width - inner * 2 - scaled(screen, 16)) // 2)
     buttons_y = panel.bottom - inner - button_height
     first_x = panel.centerx - (button_width * 2 + scaled(screen, 16)) // 2
     first = pygame.Rect(first_x, buttons_y, button_width, button_height)
     second = pygame.Rect(first.right + scaled(screen, 16), buttons_y, button_width, button_height)
-    content = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 112), panel.width - inner * 2, buttons_y - panel.top - scaled(screen, 132))
-    return panel, content, first, second
+    field_width = panel.width - inner * 2
+    title_rect = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 100), field_width, scaled(screen, 42))
+    severity_rect = pygame.Rect(panel.left + inner, panel.top + scaled(screen, 170), field_width, scaled(screen, 42))
+    message_top = panel.top + scaled(screen, 240)
+    content = pygame.Rect(panel.left + inner, message_top, field_width, max(scaled(screen, 54), buttons_y - message_top - scaled(screen, 12)))
+    option_height = scaled(screen, 34)
+    severity_options = [
+        pygame.Rect(severity_rect.left, severity_rect.bottom + scaled(screen, 4) + i * option_height, severity_rect.width, option_height)
+        for i in range(3)
+    ]
+    return panel, title_rect, severity_rect, severity_options, content, first, second
 
 
 def settings_layout(screen):
@@ -133,20 +156,32 @@ def pause_layout(screen):
     margin = scaled(screen, 18)
     button_size = scaled(screen, 42)
     pause_button = pygame.Rect(width - margin - button_size, margin, button_size, button_size)
+    feedback_button = pygame.Rect(pause_button.left - scaled(screen, 112) - scaled(screen, 8), margin + scaled(screen, 2), scaled(screen, 112), scaled(screen, 38))
 
     modal_width = min(scaled(screen, 420), width - 2 * margin)
-    modal_height = min(scaled(screen, 330), height - 2 * margin)
+    modal_height = min(scaled(screen, 350), height - 2 * margin)
     modal = pygame.Rect(0, 0, modal_width, modal_height)
     modal.center = (width // 2, height // 2)
 
     close_size = scaled(screen, 34)
     close = pygame.Rect(modal.right - scaled(screen, 16) - close_size, modal.top + scaled(screen, 14), close_size, close_size)
     button_width = min(scaled(screen, 280), modal.width - scaled(screen, 56))
-    button_height = scaled(screen, 46)
-    gap = scaled(screen, 14)
-    buttons_top = modal.top + scaled(screen, 100)
+    button_height = scaled(screen, 42)
+    gap = scaled(screen, 10)
+    buttons_top = modal.top + scaled(screen, 88)
     first_x = modal.centerx - button_width // 2
     continue_button = pygame.Rect(first_x, buttons_top, button_width, button_height)
     settings_button = pygame.Rect(first_x, buttons_top + button_height + gap, button_width, button_height)
-    menu_button = pygame.Rect(first_x, buttons_top + 2 * (button_height + gap), button_width, button_height)
-    return pause_button, modal, continue_button, settings_button, menu_button, close
+    feedback_modal_button = pygame.Rect(first_x, buttons_top + 2 * (button_height + gap), button_width, button_height)
+    menu_button = pygame.Rect(first_x, buttons_top + 3 * (button_height + gap), button_width, button_height)
+    return pause_button, feedback_button, modal, continue_button, settings_button, feedback_modal_button, menu_button, close
+
+
+def global_feedback_button(screen):
+    width, _ = screen.get_size()
+    margin = scaled(screen, 18)
+    button_width = scaled(screen, 112)
+    button_height = scaled(screen, 38)
+    pause_button, *_ = pause_layout(screen)
+    left = pause_button.left - button_width - scaled(screen, 8)
+    return pygame.Rect(max(margin, min(left, width - margin - button_width)), margin + scaled(screen, 2), button_width, button_height)
