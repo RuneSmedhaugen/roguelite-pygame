@@ -7,8 +7,8 @@ from ui.layout import font, scaled, ui_scale
 from ui.combat_text import FloatingCombatText
 from ui.combat_effects import CombatEffects
 
-ATTACK_HIT_SOUND = "slap.m4a"
-DODGE_SOUND = "dodge.m4a"
+ATTACK_HIT_SOUND = "slap.wav"
+DODGE_SOUND = "dodge.wav"
 
 
 # ------------------------------------------------------------
