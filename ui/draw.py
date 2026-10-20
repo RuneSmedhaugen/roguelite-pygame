@@ -221,19 +221,23 @@ def draw_changelog_screen(screen, entries, loading=False, error=""):
         body_font = font(screen, 21)
         title_surface = title_font.render(entry.get("title", "Update"), True, (245, 230, 190))
         body = entry.get("body", "")
-        words = body.split()
-        lines, line = [], ""
         max_width = area.width - scaled(screen, 36)
-        for word in words:
-            trial = f"{line} {word}".strip()
-            if line and body_font.size(trial)[0] > max_width:
+        lines = []
+        for paragraph in body.splitlines() or [""]:
+            if not paragraph:
+                lines.append("")
+                continue
+            line = ""
+            for word in paragraph.split():
+                trial = f"{line} {word}".strip()
+                if line and body_font.size(trial)[0] > max_width:
+                    lines.append(line)
+                    line = word
+                else:
+                    line = trial
+            if line:
                 lines.append(line)
-                line = word
-            else:
-                line = trial
-        if line:
-            lines.append(line)
-        body_height = min(len(lines), 5) * body_font.get_linesize()
+        body_height = len(lines) * body_font.get_linesize()
         card_height = scaled(screen, 54) + body_height + scaled(screen, 20)
         if y + card_height > area.bottom:
             break
@@ -242,8 +246,9 @@ def draw_changelog_screen(screen, entries, loading=False, error=""):
         screen.blit(title_surface, (card.left + scaled(screen, 18), card.top + scaled(screen, 12)))
         date_text = font(screen, 17).render(str(entry.get("created_at", ""))[:10], True, (143, 153, 176))
         screen.blit(date_text, date_text.get_rect(topright=(card.right - scaled(screen, 18), card.top + scaled(screen, 18))))
-        for index, text_line in enumerate(lines[:5]):
-            screen.blit(body_font.render(text_line, True, (218, 223, 236)), (card.left + scaled(screen, 18), card.top + scaled(screen, 50) + index * body_font.get_linesize()))
+        for index, text_line in enumerate(lines):
+            if text_line:
+                screen.blit(body_font.render(text_line, True, (218, 223, 236)), (card.left + scaled(screen, 18), card.top + scaled(screen, 50) + index * body_font.get_linesize()))
         y += card_height + gap
 
 # -------------------------
