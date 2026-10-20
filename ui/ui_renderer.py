@@ -26,24 +26,27 @@ _BATTLE_BACKGROUND = None
 _BATTLE_BACKGROUND_SCALED = {}
 
 
+def preload_battle_background(screen):
+    """Decode and scale the battle background before the first battle frame."""
+    global _BATTLE_BACKGROUND
+
+    if _BATTLE_BACKGROUND is None:
+        _BATTLE_BACKGROUND = pygame.image.load(
+            str(asset_path("background", "Rune_bakgrunn.png"))
+        ).convert()
+
+    size = screen.get_size()
+    if size not in _BATTLE_BACKGROUND_SCALED:
+        _BATTLE_BACKGROUND_SCALED[size] = pygame.transform.smoothscale(_BATTLE_BACKGROUND, size)
+    return _BATTLE_BACKGROUND_SCALED[size]
+
+
 class UIRenderer:
     def __init__(self):
         self.menu_antics = MenuAntics()
 
     def _draw_battle_background(self, screen):
-        global _BATTLE_BACKGROUND
-
-        if _BATTLE_BACKGROUND is None:
-            _BATTLE_BACKGROUND = pygame.image.load(
-                str(asset_path("background", "Rune_bakgrunn.png"))
-            ).convert()
-
-        size = screen.get_size()
-        background = _BATTLE_BACKGROUND_SCALED.get(size)
-        if background is None:
-            background = pygame.transform.smoothscale(_BATTLE_BACKGROUND, size)
-            _BATTLE_BACKGROUND_SCALED[size] = background
-        screen.blit(background, (0, 0))
+        screen.blit(preload_battle_background(screen), (0, 0))
 
     def draw(self, game, screen, mouse_pos):
         state = game.state

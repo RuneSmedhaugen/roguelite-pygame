@@ -1,6 +1,7 @@
 """Playlist playback for the game's background music."""
 
 from pathlib import Path
+import random
 
 import pygame
 
@@ -14,7 +15,9 @@ class MusicPlaylist:
         self.folder = Path(folder) if folder else asset_path("sounds", "music")
         self.ended_event = pygame.event.custom_type()
         self.tracks = []
+        self._discovered_tracks = set()
         self.current_index = -1
+        self.preloaded_track = None
         self.master_volume = 0.65
         self.music_volume = 0.45
         self.effects_volume = 0.8
@@ -51,20 +54,49 @@ class MusicPlaylist:
             pygame.mixer.music.set_volume(self.master_volume * self.music_volume)
 
     def refresh(self):
-        """Pick up supported audio files added to the music folder."""
+        """Keep one shuffled playback order, adding newly discovered songs at its end."""
         if self.folder.is_dir():
-            self.tracks = sorted(
+            discovered = {
                 path for path in self.folder.iterdir()
                 if path.is_file() and path.suffix.lower() in self.SUPPORTED_EXTENSIONS
-            )
+            }
         else:
-            self.tracks = []
+            discovered = set()
+
+        if discovered == self._discovered_tracks:
+            return
+
+        # Preserve the current cycle's order across refreshes. New files join
+        # at the end in random order; removed files simply leave the cycle.
+        self.tracks = [track for track in self.tracks if track in discovered]
+        added = list(discovered - self._discovered_tracks)
+        random.shuffle(added)
+        self.tracks.extend(added)
+        self._discovered_tracks = discovered
+
+        if self.current_index >= len(self.tracks):
+            self.current_index = len(self.tracks) - 1
 
     def start(self):
         if not self.enabled or not self.tracks:
             return
         self.current_index = 0
         self._play_current(fade_ms=1200)
+
+    def preload(self):
+        """Load the opening track without starting playback."""
+        if not self.enabled:
+            return
+        self.refresh()
+        while self.tracks:
+            try:
+                pygame.mixer.music.load(str(self.tracks[0]))
+                self.preloaded_track = self.tracks[0]
+                return
+            except pygame.error as exc:
+                print(f"Could not preload music '{self.tracks[0].name}': {exc}")
+                self.tracks.pop(0)
+        self.preloaded_track = None
 
     def play_next(self):
         # Rescan at each transition so newly added files are included without
@@ -78,11 +110,15 @@ class MusicPlaylist:
             self.current_index = (self.tracks.index(previous) + 1) % len(self.tracks)
         else:
             self.current_index = 0
+        self.preloaded_track = None
         self._play_current()
 
     def _play_current(self, fade_ms=0):
         try:
-            pygame.mixer.music.load(str(self.tracks[self.current_index]))
+            track = self.tracks[self.current_index]
+            if self.preloaded_track != track:
+                pygame.mixer.music.load(str(track))
+            self.preloaded_track = None
             self._apply_music_volume()
             pygame.mixer.music.play(fade_ms=fade_ms)
         except pygame.error as exc:

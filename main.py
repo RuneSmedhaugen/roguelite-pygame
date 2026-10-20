@@ -6,8 +6,11 @@ import pygame
 from core.assets import asset_path
 from core.game import Game
 from core.music import MusicPlaylist
+from core.startup import preload_startup_assets
 from core.sound_effects import SoundEffects
 from core.user_settings import load_settings, save_settings
+from ui.intro import play_startup_intro
+from ui.loading import draw_startup_loading
 
 # Keep relative asset paths working when launched from a desktop shortcut.
 APP_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
@@ -54,9 +57,6 @@ except pygame.error:
     # be supported. Fall back to the primary display in a safe window.
     change_display("windowed", (1280, 720), 0)
 
-window_icon = pygame.image.load(str(asset_path("sprites", "hammy.png"))).convert_alpha()
-pygame.display.set_icon(pygame.transform.smoothscale(window_icon, (64, 64)))
-
 clock = pygame.time.Clock()
 music = MusicPlaylist()
 music.set_audio_levels(**user_settings["audio_levels"])
@@ -64,6 +64,14 @@ sound_effects = SoundEffects(
     master=user_settings["audio_levels"]["master"],
     effects=user_settings["audio_levels"]["effects"],
 )
+
+screen.fill((5, 5, 12))
+pygame.display.flip()
+mascot = pygame.image.load(str(asset_path("sprites", "hammy.png"))).convert_alpha()
+pygame.display.set_icon(pygame.transform.smoothscale(mascot, (64, 64)))
+sound_effects.preload("Loud-male-scream-sound-effect.mp3")
+sound_effects.preload("soundscrate-dropped-glass-1.mp3")
+play_startup_intro(screen, mascot, clock, sound_effects)
 audio_settings_dirty = False
 
 
@@ -73,6 +81,18 @@ def apply_audio_levels(**levels):
     sound_effects.set_audio_levels(**levels)
     user_settings["audio_levels"] = music.audio_levels
     audio_settings_dirty = True
+
+
+def report_startup_progress(progress, message):
+    draw_startup_loading(screen, progress, message)
+    pygame.display.flip()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            raise SystemExit(0)
+
+
+preload_startup_assets(screen, music, sound_effects, report_startup_progress)
 
 game = Game(
     music,

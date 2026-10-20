@@ -2,11 +2,12 @@
 
 ## Before the next alpha release
 
-1. [x] Explain each character passive in plain language on the selection screen and show its current state or trigger feedback during battle.
-2. [x] Make the existing feedback and bug report form accessible from the in-game pause menu. Opening it should pause the run, and sending or cancelling should return to the paused game.
-3. Play through both Classic and Endless from the main menu and check the run flow, including level 20 victory, losing and retrying the same Classic level, running out of lives, upgrades, and game over.
-4. Build and launch a clean alpha package; confirm the feedback dashboard is excluded from the player download and settings persist.
-5. Publish a test GitHub release and verify the updater can update an installed older build, preserve settings, and relaunch the game.
+1. [x] Add a startup loading screen that preloads character art, the battle background, sound effects, and the first music track before the menu appears.
+2. [x] Explain each character passive in plain language on the selection screen and show its current state or trigger feedback during battle.
+3. [x] Make the existing feedback and bug report form accessible from the in-game pause menu. Opening it should pause the run, and sending or cancelling should return to the paused game.
+4. Play through both Classic and Endless from the main menu and check the run flow, including level 20 victory, losing and retrying the same Classic level, running out of lives, upgrades, and game over.
+5. Build and launch a clean alpha package; confirm the feedback dashboard is excluded from the player download and settings persist.
+6. Publish a test GitHub release and verify the updater can update an installed older build, preserve settings, and relaunch the game.
 
 ## After alpha
 

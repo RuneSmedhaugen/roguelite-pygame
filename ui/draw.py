@@ -10,12 +10,19 @@ from ui.layout import feedback_layout, font, game_over_layout, global_feedback_b
 SPRITE_CACHE = {}
 SPRITE_SOURCE_CACHE = {}
 
-def get_sprite(name, size=(120, 120)):
-    key = (name, tuple(size))
+def preload_sprite_source(name):
+    """Decode and cache a character sprite without creating a scaled copy."""
+    if name not in SPRITE_SOURCE_CACHE:
+        SPRITE_SOURCE_CACHE[name] = pygame.image.load(str(asset_path("sprites", name))).convert_alpha()
+    return SPRITE_SOURCE_CACHE[name]
+
+def get_sprite(name, size=(120, 120), flip_x=False):
+    key = (name, tuple(size), flip_x)
     if key not in SPRITE_CACHE:
-        if name not in SPRITE_SOURCE_CACHE:
-            SPRITE_SOURCE_CACHE[name] = pygame.image.load(str(asset_path("sprites", name))).convert_alpha()
-        SPRITE_CACHE[key] = pygame.transform.smoothscale(SPRITE_SOURCE_CACHE[name], size)
+        image = pygame.transform.smoothscale(preload_sprite_source(name), size)
+        if flip_x:
+            image = pygame.transform.flip(image, True, False)
+        SPRITE_CACHE[key] = image
     return SPRITE_CACHE[key]
 
 def draw_menu(self, screen, menu_antics=None):

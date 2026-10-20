@@ -7,7 +7,12 @@ from ui.layout import font, scaled, ui_scale
 from ui.combat_text import FloatingCombatText
 from ui.combat_effects import CombatEffects
 
-ATTACK_HIT_SOUND = "slap.wav"
+ATTACK_HIT_SOUNDS = (
+    "soundscrate-fighting-impact-punch.mp3",
+    "soundscrate-fighting-punch-1.mp3",
+    "soundscrate-fighting-punch-2.mp3",
+    "soundscrate-fighting-punch-3.mp3",
+)
 DODGE_SOUND = "dodge.wav"
 
 
@@ -282,7 +287,7 @@ class Battle:
             if self.player.is_alive() and self.enemy.is_alive():
                 events = self.combat.hit(self.player, self.enemy)
                 if self.sound_effects:
-                    sound = DODGE_SOUND if any(event["kind"] == "dodge" for event in events) else ATTACK_HIT_SOUND
+                    sound = DODGE_SOUND if any(event["kind"] == "dodge" for event in events) else random.choice(ATTACK_HIT_SOUNDS)
                     self.sound_effects.play(sound)
                 self._add_combat_events(events)
                 self._start_visual_attack(self.player, events, now)
@@ -293,7 +298,7 @@ class Battle:
             if self.enemy.is_alive() and self.player.is_alive():
                 events = self.combat.hit(self.enemy, self.player)
                 if self.sound_effects:
-                    sound = DODGE_SOUND if any(event["kind"] == "dodge" for event in events) else ATTACK_HIT_SOUND
+                    sound = DODGE_SOUND if any(event["kind"] == "dodge" for event in events) else random.choice(ATTACK_HIT_SOUNDS)
                     self.sound_effects.play(sound)
                 self._add_combat_events(events)
                 self._start_visual_attack(self.enemy, events, now)
@@ -434,7 +439,11 @@ class Battle:
         for character, x, y, size, is_winner in layouts:
             if not character.sprite_name:
                 continue
-            image = get_sprite(character.sprite_name, (size, size))
+            image = get_sprite(
+                character.sprite_name,
+                (size, size),
+                flip_x=character is self.enemy,
+            )
             if is_winner:
                 bounce = abs(math.sin(progress * math.tau * 2)) * 30 * scale
                 image = image.copy()
@@ -563,7 +572,11 @@ class Battle:
     def draw_character(self, screen, char, x, y, size, flash=None):
         if char.sprite_name:
             try:
-                img = get_sprite(char.sprite_name, (size, size))
+                img = get_sprite(
+                    char.sprite_name,
+                    (size, size),
+                    flip_x=char is self.enemy,
+                )
                 if flash is not None and flash[1] > 0:
                     img = img.copy()
                     tint = pygame.Surface(img.get_size(), pygame.SRCALPHA)
