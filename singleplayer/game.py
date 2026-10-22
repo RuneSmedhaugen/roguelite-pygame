@@ -2,21 +2,21 @@ import sys
 
 import pygame
 
-from core.entities import Character
-from core.battle import Battle
-from core.enemy_factory import generate_enemy
-from core.upgrades import get_random_upgrades
+from singleplayer.achievements import AchievementStore
+from singleplayer.battle import Battle
+from singleplayer.enemy_factory import generate_enemy
+from singleplayer.upgrades import get_random_upgrades
 from core.character_factory import build_character
 from core.character_factory import get_random_characters
 
 from ui.draw import draw_character_select
 from ui.feedback import FeedbackClient
-from ui.layout import feedback_layout, game_over_layout, global_feedback_button, menu_buttons, mode_select_buttons, pause_layout, scaled, select_back_button, selection_confirm_buttons
+from ui.layout import achievement_reset_layout, achievements_layout, feedback_layout, game_over_layout, global_feedback_button, menu_buttons, mode_select_buttons, pause_layout, scaled, select_back_button, selection_confirm_buttons
 from core.updater import UpdateService, launch_update_helper
 from core.version import VERSION
 
 
-class Game:
+class SinglePlayerGame:
     def __init__(self, music=None, display_mode="fullscreen", display_size=None, display_index=0, sound_effects=None, on_audio_change=None):
         from ui.ui_renderer import UIRenderer
         from ui.settings import SettingsScreen
@@ -56,6 +56,13 @@ class Game:
         self.changelog_entries = []
         self.changelog_loading = False
         self.changelog_error = ""
+        self.achievement_store = AchievementStore()
+        self.achievement_filter = "all"
+        self.achievement_scroll = 0
+        self.achievement_reset_confirm = False
+        self.run_achievement_ids = []
+        self.achievement_toast = None
+        self.achievement_toast_started = None
 
         self.round = 1
         self.state = "menu"
@@ -133,6 +140,25 @@ class Game:
         self.upgrades = get_random_upgrades(3)
         self.upgrade_rects = []
 
+    def _award_achievement(self, achievement_id):
+        achievement = self.achievement_store.unlock(achievement_id)
+        if achievement is None:
+            return
+        self.run_achievement_ids.append(achievement_id)
+        self.achievement_toast = achievement
+        self.achievement_toast_started = pygame.time.get_ticks()
+
+    def _award_result_achievements(self):
+        if self.result != "player" or self.player is None:
+            return
+        character_id = self.player.character_id
+        if self.game_mode == "classic" and self.round >= 20:
+            self._award_achievement(f"classic_{character_id}")
+        elif self.game_mode == "endless":
+            for level in (10, 25, 50):
+                if self.round == level:
+                    self._award_achievement(f"endless_{character_id}_{level}")
+
     def reset_run(self):
         self.round = 1
         self.lives = 5
@@ -158,13 +184,17 @@ class Game:
         self.run_character = None
         self.battle_history.clear()
         self.upgrade_history.clear()
+        self.run_achievement_ids.clear()
+        self.achievement_toast = None
+        self.achievement_toast_started = None
         self.game_over_battle_scroll = 0
         self.game_over_upgrade_scroll = 0
         self.character_choices = get_random_characters(5)
         self.state = "menu"
 
     def handle_game_over_scroll(self, amount, position, screen):
-        _, _, battles_rect, upgrades_rect = game_over_layout(screen)
+        show_achievements = bool(self.run_achievement_ids)
+        _, _, battles_rect, upgrades_rect = game_over_layout(screen, show_achievements)
         row_height = scaled(screen, 28)
         visible_rows = max(1, (battles_rect.height - scaled(screen, 52)) // row_height)
         if battles_rect.collidepoint(position):
@@ -175,6 +205,13 @@ class Game:
             self.game_over_upgrade_scroll = max(
                 0, min(self.game_over_upgrade_scroll - amount, len(self.upgrade_history) - visible_rows)
             )
+
+    def handle_achievement_scroll(self, amount, screen):
+        visible = self.achievement_store.filtered(self.achievement_filter)
+        layout = achievements_layout(screen, len(visible))
+        self.achievement_scroll = max(
+            0, min(self.achievement_scroll - amount, layout["max_scroll"])
+        )
 
     def _leave_pause_settings(self):
         if self.settings_from_pause:
@@ -200,6 +237,7 @@ class Game:
             if self.state == "battle_intro" and self.battle_intro_started_at is not None:
                 self.battle_intro_started_at += paused_for
             if self.battle is not None:
+                self.battle.last_update_at += paused_for
                 self.battle.player_last_attack += paused_for
                 self.battle.enemy_last_attack += paused_for
                 for combat_text in self.battle.combat_texts:
@@ -292,6 +330,10 @@ class Game:
     # -------------------------
     def update(self, keys, mouse_pos, mouse_click, screen=None):
         self._poll_update_check()
+        if (self.achievement_toast is not None and self.achievement_toast_started is not None
+                and pygame.time.get_ticks() - self.achievement_toast_started >= 5000):
+            self.achievement_toast = None
+            self.achievement_toast_started = None
         escape_down = bool(keys[pygame.K_ESCAPE])
         escape_pressed = escape_down and not self.escape_was_down
         self.escape_was_down = escape_down
@@ -310,7 +352,7 @@ class Game:
             if mouse_click and not self.click_lock:
                 self.click_lock = True
 
-                play_button, settings_button, feedback_button, changelog_button, exit_button = menu_buttons(screen or pygame.display.get_surface())
+                play_button, achievements_button, settings_button, feedback_button, changelog_button, exit_button = menu_buttons(screen or pygame.display.get_surface())
 
                 if play_button.collidepoint(mouse_pos):
                     if self.update_status == "checking":
@@ -319,6 +361,11 @@ class Game:
                         self._begin_update()
                     else:
                         self.state = "mode_select"
+                elif achievements_button.collidepoint(mouse_pos):
+                    self.achievement_filter = "all"
+                    self.achievement_scroll = 0
+                    self.achievement_reset_confirm = False
+                    self.state = "achievements"
                 elif settings_button.collidepoint(mouse_pos):
                     self.settings_from_pause = False
                     self.state = "settings"
@@ -333,6 +380,42 @@ class Game:
                 elif exit_button.collidepoint(mouse_pos):
                     self.exit_requested = True
 
+            return
+
+        if self.state == "achievements":
+            if escape_pressed:
+                if self.achievement_reset_confirm:
+                    self.achievement_reset_confirm = False
+                else:
+                    self.state = "menu"
+                return
+            if mouse_click and not self.click_lock and screen is not None:
+                self.click_lock = True
+                if self.achievement_reset_confirm:
+                    _, confirm_button, cancel_button = achievement_reset_layout(screen)
+                    if confirm_button.collidepoint(mouse_pos):
+                        self.achievement_store.reset()
+                        self.run_achievement_ids.clear()
+                        self.achievement_toast = None
+                        self.achievement_toast_started = None
+                        self.achievement_reset_confirm = False
+                        self.achievement_scroll = 0
+                    elif cancel_button.collidepoint(mouse_pos):
+                        self.achievement_reset_confirm = False
+                    return
+
+                visible = self.achievement_store.filtered(self.achievement_filter)
+                layout = achievements_layout(screen, len(visible))
+                if layout["reset"].collidepoint(mouse_pos):
+                    self.achievement_reset_confirm = True
+                elif layout["back"].collidepoint(mouse_pos):
+                    self.state = "menu"
+                else:
+                    for mode, rect in layout["filters"].items():
+                        if rect.collidepoint(mouse_pos):
+                            self.achievement_filter = mode
+                            self.achievement_scroll = 0
+                            break
             return
 
         if self.state == "mode_select":
@@ -557,6 +640,7 @@ class Game:
                     self.lives -= 1
                     print (f"LIFE LOST! Lives remaining: {self.lives}")
 
+                self._award_result_achievements()
                 self.battle_history.append({
                     "round": self.round,
                     "opponent": getattr(self.enemy, "name", "Unknown opponent"),

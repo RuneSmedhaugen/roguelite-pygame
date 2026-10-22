@@ -20,6 +20,7 @@ from ui.draw import (
     draw_mode_select,
     draw_passive_status,
 )
+from singleplayer.achievements_ui import draw_achievements_screen, draw_achievement_toast
 
 
 _BATTLE_BACKGROUND = None
@@ -72,6 +73,9 @@ class UIRenderer:
 
         elif state == "changelog":
             draw_changelog_screen(screen, game.changelog_entries, game.changelog_loading, game.changelog_error)
+
+        elif state == "achievements":
+            draw_achievements_screen(screen, game, mouse_pos)
 
         elif state == "settings":
             game.settings_screen.draw(screen, mouse_pos)
@@ -141,6 +145,10 @@ class UIRenderer:
 
         elif state == "game_win":
             draw_game_over(screen, game, mouse_pos, won=True)
+
+        if (game.achievement_toast is not None and not game.pause_open
+                and state in ("battle_result", "game_over", "game_win")):
+            draw_achievement_toast(screen, game.achievement_toast)
 
         if state in ("battle_intro", "battle", "battle_result", "upgrade"):
             draw_life_runes(screen, game.lives)

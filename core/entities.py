@@ -1,4 +1,5 @@
 from core.passives import create_passive
+from core.upgrades import apply_upgrade
 
 
 class Character:
@@ -29,6 +30,7 @@ class Character:
         self.rarity = data.rarity
 
         self.name = data.name
+        self.character_id = data.character_id
         self.sprite_name = data.sprite_name
         self.intro_sound = data.intro_sound
         self.win_sound = data.win_sound
@@ -90,23 +92,4 @@ class Character:
         return damage_events
 
     def apply_upgrade(self, upgrade):
-        stat = upgrade.get("stat")
-        value = upgrade.get("value")
-
-        # -------- HP --------
-        if stat == "hp":
-            self.max_hp += value
-            self.hp += value
-            return
-
-        # -------- DAMAGE --------
-        if stat == "atk":
-            min_inc, max_inc = value
-            self.atk_min += min_inc
-            self.atk_max += max_inc
-            return
-
-        # -------- GENERIC STATS --------
-        if hasattr(self, stat):
-            current = getattr(self, stat)
-            setattr(self, stat, current + value)
+        apply_upgrade(self, upgrade)

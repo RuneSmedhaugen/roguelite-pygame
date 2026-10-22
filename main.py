@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pygame
 from core.assets import asset_path
-from core.game import Game
+from singleplayer.game import SinglePlayerGame
 from core.music import MusicPlaylist
 from core.startup import preload_startup_assets
 from core.sound_effects import SoundEffects
@@ -94,7 +94,7 @@ def report_startup_progress(progress, message):
 
 preload_startup_assets(screen, music, sound_effects, report_startup_progress)
 
-game = Game(
+game = SinglePlayerGame(
     music,
     DISPLAY_MODE,
     DISPLAY_SIZE,
@@ -140,6 +140,8 @@ while running:
         elif event.type == pygame.MOUSEWHEEL:
             if game.state == "settings":
                 game.settings_screen.handle_scroll(event.y)
+            elif game.state == "achievements":
+                game.handle_achievement_scroll(event.y, screen)
             elif game.state in ("game_over", "game_win"):
                 game.handle_game_over_scroll(event.y, pygame.mouse.get_pos(), screen)
 

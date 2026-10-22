@@ -35,6 +35,7 @@ def build_character(raw, x=150, y=250, scale=1.0):
         main_stat=raw.get("main_stat"),
         rarity=raw.get("rarity", "common"),
         name=raw["name"],
+        character_id=raw.get("id", raw["name"].lower().replace(" ", "_")),
         sprite_name=raw.get("sprite"),
         intro_sound=raw.get("intro_sound"),
         win_sound=raw.get("win_sound"),

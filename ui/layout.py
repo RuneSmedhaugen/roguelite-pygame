@@ -21,16 +21,78 @@ def font(screen, base_size, bold=False):
 
 def menu_buttons(screen):
     width, height = screen.get_size()
-    button_width = min(scaled(screen, 240), int(width * 0.72))
-    button_height = scaled(screen, 54)
-    gap = scaled(screen, 14)
-    total_height = button_height * 5 + gap * 4
-    top = round(height * 0.62 - total_height / 2)
+    button_width = min(scaled(screen, 280), int(width * 0.72))
+    button_height = scaled(screen, 48)
+    gap = scaled(screen, 9)
+    total_height = button_height * 6 + gap * 5
+    top = round(height * 0.58 - total_height / 2)
     left = (width - button_width) // 2
     return [
         pygame.Rect(left, top + i * (button_height + gap), button_width, button_height)
-        for i in range(5)
+        for i in range(6)
     ]
+
+
+def achievements_layout(screen, item_count=0):
+    width, height = screen.get_size()
+    margin = scaled(screen, 22)
+    tab_y = scaled(screen, 100)
+    tab_height = scaled(screen, 34)
+    filter_widths = (scaled(screen, 82), scaled(screen, 112), scaled(screen, 112))
+    filter_gap = scaled(screen, 8)
+    filters = {}
+    left = margin
+    for name, button_width in zip(("all", "classic", "endless"), filter_widths):
+        filters[name] = pygame.Rect(left, tab_y, button_width, tab_height)
+        left += button_width + filter_gap
+
+    reset_width = scaled(screen, 138)
+    reset = pygame.Rect(width - margin - reset_width, tab_y, reset_width, tab_height)
+    back = pygame.Rect(margin, height - scaled(screen, 58), scaled(screen, 140), scaled(screen, 40))
+    grid = pygame.Rect(
+        margin,
+        tab_y + tab_height + scaled(screen, 14),
+        width - margin * 2,
+        max(scaled(screen, 40), back.top - (tab_y + tab_height + scaled(screen, 26))),
+    )
+    columns = 4 if width >= 700 else (2 if width >= 420 else 1)
+    gap = scaled(screen, 10)
+    tile_width = (grid.width - gap * (columns - 1)) // columns
+    tile_height = scaled(screen, 112)
+    row_pitch = tile_height + gap
+    visible_rows = max(1, (grid.height + gap) // row_pitch)
+    total_rows = (item_count + columns - 1) // columns
+    return {
+        "filters": filters,
+        "reset": reset,
+        "back": back,
+        "grid": grid,
+        "columns": columns,
+        "gap": gap,
+        "tile_width": tile_width,
+        "tile_height": tile_height,
+        "row_pitch": row_pitch,
+        "visible_rows": visible_rows,
+        "max_scroll": max(0, total_rows - visible_rows),
+    }
+
+
+def achievement_reset_layout(screen):
+    width, height = screen.get_size()
+    modal_width = min(scaled(screen, 450), width - scaled(screen, 32))
+    modal_height = scaled(screen, 190)
+    modal = pygame.Rect(0, 0, modal_width, modal_height)
+    modal.center = (width // 2, height // 2)
+    button_width = min(scaled(screen, 160), (modal.width - scaled(screen, 48)) // 2)
+    button_height = scaled(screen, 42)
+    gap = scaled(screen, 12)
+    first_x = modal.centerx - (button_width * 2 + gap) // 2
+    button_y = modal.bottom - scaled(screen, 60)
+    return (
+        modal,
+        pygame.Rect(first_x, button_y, button_width, button_height),
+        pygame.Rect(first_x + button_width + gap, button_y, button_width, button_height),
+    )
 
 
 def mode_select_buttons(screen):
@@ -100,7 +162,7 @@ def settings_layout(screen):
     return panel, mode, monitor, resolution, master_volume, music_volume, effects_volume, back, apply
 
 
-def game_over_layout(screen):
+def game_over_layout(screen, show_achievements=False):
     width, height = screen.get_size()
     margin = scaled(screen, 28)
     button_width = min(scaled(screen, 220), (width - margin * 3) // 2)
@@ -112,7 +174,7 @@ def game_over_layout(screen):
     retry = pygame.Rect(left, button_y, button_width, button_height)
     menu = pygame.Rect(left + button_width + gap, button_y, button_width, button_height)
 
-    content_top = round(height * 0.29)
+    content_top = round(height * (0.42 if show_achievements else 0.29))
     content_bottom = button_y - scaled(screen, 18)
     content_height = max(scaled(screen, 80), content_bottom - content_top)
     content_width = width - margin * 2

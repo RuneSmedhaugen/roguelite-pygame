@@ -32,6 +32,7 @@ class CharacterData:
     rarity: str = "common"
 
     name: str = "Unknown"
+    character_id: str = ""
     sprite_name: str = None
     intro_sound: Optional[str] = None
     win_sound: Optional[str] = None

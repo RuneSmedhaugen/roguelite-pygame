@@ -61,14 +61,14 @@ def draw_menu(self, screen, menu_antics=None):
     pygame.draw.rect(screen, (35, 32, 31), alpha_panel, border_radius=scaled(screen, 8))
     screen.blit(alpha_note, alpha_rect)
 
-    button_font = font(screen, 40)
+    button_font = font(screen, 32)
 
     if getattr(self, "update_info", None):
         first_label, first_color = "UPDATE GAME", (159, 111, 40)
     elif getattr(self, "update_status", "") == "checking":
         first_label, first_color = "CHECKING...", (76, 91, 119)
     else:
-        first_label, first_color = "PLAY", (60, 120, 200)
+        first_label, first_color = "SINGLEPLAYER", (60, 120, 200)
     update_message = getattr(self, "update_message", "")
     if update_message:
         status_font = font(screen, 16, bold=True)
@@ -77,7 +77,14 @@ def draw_menu(self, screen, menu_antics=None):
             status_font = pygame.font.SysFont(None, status_font.get_height() - 1, bold=True)
         status_surface = status_font.render(status_text, True, (255, 190, 145))
         screen.blit(status_surface, status_surface.get_rect(center=(screen.get_width() // 2, buttons[0].top - scaled(screen, 30))))
-    labels = ((first_label, first_color), ("SETTINGS", (80, 80, 80)), ("FEEDBACK", (74, 105, 88)), ("CHANGELOG", (83, 81, 119)), ("EXIT GAME", (120, 55, 55)))
+    labels = (
+        (first_label, first_color),
+        ("ACHIEVEMENTS", (105, 91, 137)),
+        ("SETTINGS", (80, 80, 80)),
+        ("FEEDBACK", (74, 105, 88)),
+        ("CHANGELOG", (83, 81, 119)),
+        ("EXIT GAME", (120, 55, 55)),
+    )
     for rect, (label, color) in zip(menu_buttons(screen), labels):
         pygame.draw.rect(screen, color, rect, border_radius=scaled(screen, 10))
         text = button_font.render(label, True, (255, 255, 255))
@@ -407,7 +414,40 @@ def draw_game_over(screen, game, mouse_pos, won=False):
         completion = font(screen, 27, bold=True).render("LEVEL 20 CLEARED — YOU BEAT THE GAME!", True, (255, 224, 143))
         screen.blit(completion, completion.get_rect(center=(screen.get_width() // 2, round(screen.get_height() * 0.245))))
 
-    retry_button, menu_button, battles_rect, upgrades_rect = game_over_layout(screen)
+    earned_achievements = game.achievement_store.for_ids(game.run_achievement_ids)
+    retry_button, menu_button, battles_rect, upgrades_rect = game_over_layout(
+        screen, show_achievements=bool(earned_achievements))
+    if earned_achievements:
+        section = font(screen, 17, bold=True).render(
+            "ACHIEVEMENTS UNLOCKED THIS RUN", True, (229, 200, 125))
+        screen.blit(section, section.get_rect(
+            center=(screen.get_width() // 2, round(screen.get_height() * .285))))
+        gap = scaled(screen, 8)
+        card_width = min(scaled(screen, 210), (screen.get_width() - scaled(screen, 40) - gap * (len(earned_achievements) - 1)) // len(earned_achievements))
+        card_height = scaled(screen, 58)
+        total_width = card_width * len(earned_achievements) + gap * (len(earned_achievements) - 1)
+        start_x = (screen.get_width() - total_width) // 2
+        card_y = round(screen.get_height() * .31)
+        icon_size = scaled(screen, 42)
+        for index, achievement in enumerate(earned_achievements):
+            card = pygame.Rect(start_x + index * (card_width + gap), card_y, card_width, card_height)
+            pygame.draw.rect(screen, (34, 40, 54), card, border_radius=scaled(screen, 7))
+            pygame.draw.rect(screen, achievement["color"], card, width=max(1, scaled(screen, 2)),
+                             border_radius=scaled(screen, 7))
+            badge = pygame.Rect(card.left + scaled(screen, 7), card.centery - icon_size // 2,
+                                icon_size, icon_size)
+            pygame.draw.rect(screen, achievement["color"], badge, border_radius=scaled(screen, 5))
+            if achievement.get("sprite"):
+                sprite = get_sprite(achievement["sprite"], (icon_size - scaled(screen, 5),) * 2)
+                screen.blit(sprite, sprite.get_rect(center=badge.center))
+            name_font = font(screen, 14, bold=True)
+            max_name_width = card.right - badge.right - scaled(screen, 8)
+            while name_font.size(achievement["name"])[0] > max_name_width and name_font.get_height() > scaled(screen, 11):
+                name_font = pygame.font.SysFont(None, name_font.get_height() - 1, bold=True)
+            name = name_font.render(achievement["name"], True, (246, 235, 207))
+            screen.blit(name, name.get_rect(
+                midleft=(badge.right + scaled(screen, 6), card.centery)))
+
     panel_color = (29, 34, 49)
     pygame.draw.rect(screen, panel_color, battles_rect, border_radius=scaled(screen, 10))
     pygame.draw.rect(screen, panel_color, upgrades_rect, border_radius=scaled(screen, 10))
